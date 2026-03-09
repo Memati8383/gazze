@@ -1,0 +1,17 @@
+<linker>
+  <!-- Sizin Kodlarınız -->
+  <assembly fullname="Gazze.Runtime" preserve="all" />
+  <assembly fullname="Assembly-CSharp" preserve="all" />
+  
+  <!-- URP (Universal Render Pipeline) ve Grafikler [SerializeReference çöküşünü önler] -->
+  <assembly fullname="Unity.RenderPipelines.Universal.Runtime" preserve="all" />
+  <assembly fullname="Unity.RenderPipelines.Core.Runtime" preserve="all" />
+  <assembly fullname="Unity.RenderPipelines.ShaderGraph.Runtime" preserve="all" />
+
+  <!-- Arayüz (UI) ve Yazı Tipi -->
+  <assembly fullname="Unity.TextMeshPro" preserve="all" />
+  <assembly fullname="UnityEngine.UI" preserve="all" />
+  <assembly fullname="UnityEngine">
+    <type fullname="UnityEngine.EventSystems.*" preserve="all"/>
+  </assembly>
+</linker>

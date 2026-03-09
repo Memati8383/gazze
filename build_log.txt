@@ -1,0 +1,24 @@
+[Licensing::Module] Trying to connect to existing licensing client channel...
+Built from '6000.3/staging' branch; Version is '6000.3.8f1 (1c7db571dde0) revision 1867189'; Using compiler version '194234433'; Build Type 'Release'
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-USER" at "2026-03-08T05:50:35.4868315Z"
+OS: 'Windows 11  (10.0.26200) Core' Language: 'tr' Physical Memory: 15990 MB
+BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1
+System  architecture: x64
+Process architecture: x64
+Date: 2026-03-08T05:50:35Z
+
+COMMAND LINE ARGUMENTS:
+C:\Program Files\Unity\Hub\Editor\6000.3.8f1\Editor\Unity.exe
+-projectPath
+c:\Users\USER\gazze
+-quit
+-batchmode
+-buildTarget
+Android
+-executeMethod
+Gazze.Editor.FixBuildSettings.ApplyFixes
+-logFile
+c:\Users\USER\gazze\build_log.txt
+Successfully changed project path to: c:\Users\USER\gazze
+C:/Users/USER/gazze
+Exiting without the bug reporter. Application will terminate with return code 1

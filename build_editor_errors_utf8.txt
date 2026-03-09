@@ -1,0 +1,19 @@
+﻿  Geri y├╝klenecek projeler belirleniyor...
+  Yap─▒lacak i┼şlem yok. Belirtilen projelerden hi├ğbiri geri y├╝klenecek paketleri i├ğermiyor.
+C:\Program Files\dotnet\sdk\10.0.103\Microsoft.Common.CurrentVersion.targets(1597,5): error MSB3107: "Assembly-CSharp.csproj" ba┼şvurusu i├ğin belirtilen proje ba┼şvuru meta verisi yok veya ge├ğersiz de─şere sahip: Project [c:\Users\USER\gazze\Assembly-CSharp-Editor.csproj]
+C:\Program Files\dotnet\sdk\10.0.103\Microsoft.Common.CurrentVersion.targets(1597,5): error MSB3107: "Gazze.Runtime.csproj" ba┼şvurusu i├ğin belirtilen proje ba┼şvuru meta verisi yok veya ge├ğersiz de─şere sahip: Project [c:\Users\USER\gazze\Assembly-CSharp-Editor.csproj]
+C:\Program Files\dotnet\sdk\10.0.103\Microsoft.Common.CurrentVersion.targets(1597,5): error MSB3107: "Gazze.Editor.csproj" ba┼şvurusu i├ğin belirtilen proje ba┼şvuru meta verisi yok veya ge├ğersiz de─şere sahip: Project [c:\Users\USER\gazze\Assembly-CSharp-Editor.csproj]
+C:\Program Files\dotnet\sdk\10.0.103\Microsoft.Common.CurrentVersion.targets(1597,5): error MSB3107: "MCPForUnity.Editor.csproj" ba┼şvurusu i├ğin belirtilen proje ba┼şvuru meta verisi yok veya ge├ğersiz de─şere sahip: Project [c:\Users\USER\gazze\Assembly-CSharp-Editor.csproj]
+C:\Program Files\dotnet\sdk\10.0.103\Microsoft.Common.CurrentVersion.targets(1597,5): error MSB3107: "MCPForUnity.Runtime.csproj" ba┼şvurusu i├ğin belirtilen proje ba┼şvuru meta verisi yok veya ge├ğersiz de─şere sahip: Project [c:\Users\USER\gazze\Assembly-CSharp-Editor.csproj]
+
+Olu┼şturma BA┼ŞARISIZ OLDU.
+
+C:\Program Files\dotnet\sdk\10.0.103\Microsoft.Common.CurrentVersion.targets(1597,5): error MSB3107: "Assembly-CSharp.csproj" ba┼şvurusu i├ğin belirtilen proje ba┼şvuru meta verisi yok veya ge├ğersiz de─şere sahip: Project [c:\Users\USER\gazze\Assembly-CSharp-Editor.csproj]
+C:\Program Files\dotnet\sdk\10.0.103\Microsoft.Common.CurrentVersion.targets(1597,5): error MSB3107: "Gazze.Runtime.csproj" ba┼şvurusu i├ğin belirtilen proje ba┼şvuru meta verisi yok veya ge├ğersiz de─şere sahip: Project [c:\Users\USER\gazze\Assembly-CSharp-Editor.csproj]
+C:\Program Files\dotnet\sdk\10.0.103\Microsoft.Common.CurrentVersion.targets(1597,5): error MSB3107: "Gazze.Editor.csproj" ba┼şvurusu i├ğin belirtilen proje ba┼şvuru meta verisi yok veya ge├ğersiz de─şere sahip: Project [c:\Users\USER\gazze\Assembly-CSharp-Editor.csproj]
+C:\Program Files\dotnet\sdk\10.0.103\Microsoft.Common.CurrentVersion.targets(1597,5): error MSB3107: "MCPForUnity.Editor.csproj" ba┼şvurusu i├ğin belirtilen proje ba┼şvuru meta verisi yok veya ge├ğersiz de─şere sahip: Project [c:\Users\USER\gazze\Assembly-CSharp-Editor.csproj]
+C:\Program Files\dotnet\sdk\10.0.103\Microsoft.Common.CurrentVersion.targets(1597,5): error MSB3107: "MCPForUnity.Runtime.csproj" ba┼şvurusu i├ğin belirtilen proje ba┼şvuru meta verisi yok veya ge├ğersiz de─şere sahip: Project [c:\Users\USER\gazze\Assembly-CSharp-Editor.csproj]
+    0 Uyar─▒
+    5 Hata
+
+Ge├ğen S├╝re 00:00:00.51

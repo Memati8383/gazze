@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1013498773573",
+    "project_id": "gazze-1ea2f",
+    "storage_bucket": "gazze-1ea2f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1013498773573:android:1c519ecfac7de026f0632c",
+        "android_client_info": {
+          "package_name": "com.GoksuGames.gazze"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDi-ohyDN7vjNYUOkV7Xsu3E2EOzL1PqOY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

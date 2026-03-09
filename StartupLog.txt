@@ -1,0 +1,3 @@
+Unity Başlatıldı: 8.03.2026 15:11:53
+Platform: WindowsEditor
+Graphics API: Direct3D11
