@@ -7,38 +7,68 @@ using UnityEngine.EventSystems;
 
 namespace Gazze.UI
 {
+    /// <summary>
+    /// "Burnished Amber & Obsidian" temalı oyun sonu paneli.
+    /// Bulanık arka plan + cam kart + sinematik animasyonlar.
+    /// PauseMenuBuilder ile görsel uyum sağlar.
+    /// </summary>
     public class GameOverPanelBuilder
     {
-        // ─── DESIGN TOKENS ──────────────────────────────────────────────
-        static readonly Color BgDim          = new Color(0f, 0f, 0f, 0.75f);
-        static readonly Color CardBg         = new Color32(14, 18, 32, 240);
-        static readonly Color CardBorder     = new Color32(45, 55, 90, 200);
-        static readonly Color AccentCyan     = new Color32(0, 210, 255, 255);
-        static readonly Color AccentGold     = new Color32(255, 200, 50, 255);
-        static readonly Color AccentRed      = new Color32(255, 75, 80, 255);
-        static readonly Color TextPrimary    = new Color32(235, 240, 255, 255);
-        static readonly Color TextSecondary  = new Color32(130, 145, 185, 255);
-        static readonly Color StatCardBg     = new Color32(25, 30, 55, 220);
-        static readonly Color SeparatorColor = new Color32(0, 210, 255, 40);
+        static TMP_FontAsset fallbackFont;
+        // ═══════════════════════════════════════════════════════════════
+        // DESIGN TOKENS — Luxury Amber & Obsidian (PauseMenu ile uyumlu)
+        // ═══════════════════════════════════════════════════════════════
+        static readonly Color BgTint          = new Color(0.012f, 0.008f, 0.004f, 0.92f);
+        static readonly Color CardGlass       = new Color(0.12f, 0.08f, 0.05f, 0.80f);
+        static readonly Color CardBorderA     = new Color32(255, 215, 110, 140);
+        static readonly Color CardBorderB     = new Color32(220, 130, 60, 120);
 
-        // Button palette
-        static readonly Color BtnRestart  = new Color32(50, 215, 120, 255);
-        static readonly Color BtnMenu     = new Color32(60, 130, 255, 255);
-        static readonly Color BtnShare    = new Color32(255, 155, 40, 255);
-        static readonly Color BtnSettings = new Color32(180, 80, 220, 255);
+        static readonly Color Accent1         = new Color32(255, 225, 140, 255);  // Luxury Gold
+        static readonly Color Accent2         = new Color32(255, 160, 80, 255);   // Rich Amber
+        static readonly Color Accent3         = new Color32(255, 250, 230, 255);  // Ivory Gold
+        static readonly Color AccentDanger    = new Color32(255, 100, 60, 255);   // Deep Crimson
+        static readonly Color AccentGold      = new Color32(255, 215, 120, 255);  // Warm Gold (Cyan replacement)
 
-        // ─── MAIN ANIMATOR ──────────────────────────────────────────────
+        static readonly Color TextWhite       = new Color32(255, 253, 245, 255);
+        static readonly Color TextFaded       = new Color32(220, 200, 170, 230);
+        static readonly Color TextDim         = new Color32(200, 180, 150, 220);
+        static readonly Color SepColor        = new Color32(255, 210, 130, 55);
+
+        // Stat card palette
+        static readonly Color StatBg          = new Color(0.08f, 0.06f, 0.04f, 0.85f);
+        static readonly Color StatGold        = new Color32(255, 215, 100, 255);
+        static readonly Color StatAmber       = new Color32(255, 165, 75, 255);
+        static readonly Color StatIvory       = new Color32(255, 245, 210, 255);
+        static readonly Color StatAccent      = new Color32(255, 210, 130, 255);
+
+        // Button palette (consistent amber theme)
+        static readonly Color BtnRestart      = new Color32(255, 225, 140, 255);  // Gold Primary
+        static readonly Color BtnMenu         = new Color32(140, 120, 100, 255);  // Muted Stone
+        static readonly Color BtnShare        = new Color32(255, 160, 80, 255);   // Amber
+        static readonly Color BtnSettings     = new Color32(180, 160, 140, 255);  // Warm Gray
+
+        // Achievement badge colors
+        static readonly Color AchBadgeBg      = new Color(0.15f, 0.11f, 0.07f, 0.90f);
+        static readonly Color AchBorder       = new Color32(255, 200, 100, 80);
+        static readonly Color AchText         = new Color32(255, 230, 180, 255);
+        static readonly Color AchIcon         = new Color32(255, 200, 100, 255);
+
+        // ═══════════════════════════════════════════════════════════════
+        // MAIN PANEL ANIMATOR — Sinematik açılış
+        // ═══════════════════════════════════════════════════════════════
         class GameOverPanelAnimator : MonoBehaviour
         {
             public CanvasGroup cg;
             public List<RectTransform> staggerTargets = new List<RectTransform>();
-            public TextMeshProUGUI scoreCountTMP;   // Skor sayma animasyonu
-            public int targetScore;                  // Hedef skor değeri
-            public TextMeshProUGUI titleTMP;         // Başlık glow pulse
-            public RectTransform cardRT;             // Kart scale animasyonu
+            public TextMeshProUGUI scoreCountTMP;
+            public int targetScore;
+            public TextMeshProUGUI titleTMP;
+            public RectTransform cardRT;
+            public RawImage blurImg;
+            public Image scoreGlow;
 
             public float fadeDuration = 0.5f;
-            public float staggerDelay = 0.07f;
+            public float staggerDelay = 0.06f;
 
             float t;
             bool done;
@@ -48,127 +78,244 @@ namespace Gazze.UI
 
             void OnEnable()
             {
-                t = 0f;
-                done = false;
-                countDone = false;
-                countTimer = 0f;
-                displayedScore = 0;
+                t = 0f; done = false; countDone = false;
+                countTimer = 0f; displayedScore = 0;
                 if (cg != null) cg.alpha = 0f;
 
-                // Set initial states
                 foreach (var rt in staggerTargets)
                 {
                     if (rt == null) continue;
                     var cg2 = rt.GetComponent<CanvasGroup>();
                     if (cg2 != null) cg2.alpha = 0f;
-                    rt.localScale = new Vector3(0.85f, 0.85f, 1f);
+                    rt.localScale = new Vector3(0.88f, 0.88f, 1f);
                 }
-
-                // Card starts smaller
-                if (cardRT != null) cardRT.localScale = new Vector3(0.9f, 0.9f, 1f);
+                if (cardRT != null) cardRT.localScale = new Vector3(0.92f, 0.92f, 1f);
             }
 
             void Update()
             {
                 t += Time.unscaledDeltaTime;
 
-                // ── Phase 1: Overlay fade + card scale ──
-                float overlayT = Mathf.Clamp01(t / (fadeDuration * 0.5f));
-                float overlayEase = 1f - Mathf.Pow(1f - overlayT, 2f);
-                if (cg != null) cg.alpha = overlayEase;
+                // ── Phase 1: BG fade + blur reveal ──
+                float oT = Mathf.Clamp01(t / 0.35f);
+                float oE = 1f - Mathf.Pow(1f - oT, 2.5f);
+                if (cg) cg.alpha = oE;
 
-                if (cardRT != null)
+                if (blurImg)
+                    blurImg.color = new Color(1, 1, 1, Mathf.Clamp01(t / 0.3f));
+
+                // ── Phase 2: Card scale with overshoot ──
+                if (cardRT)
                 {
-                    float cardT = Mathf.Clamp01((t - 0.05f) / 0.4f);
-                    float cardEase = 1f - Mathf.Pow(1f - cardT, 3f);
-                    cardRT.localScale = Vector3.Lerp(new Vector3(0.9f, 0.9f, 1f), Vector3.one, cardEase);
+                    float cT = Mathf.Clamp01((t - 0.05f) / 0.45f);
+                    // OutBack-style overshoot
+                    float cE = 1f - Mathf.Pow(1f - cT, 3f) * (1f - cT * 1.15f);
+                    cardRT.localScale = Vector3.LerpUnclamped(new Vector3(0.92f, 0.92f, 1f), Vector3.one, cE);
                 }
 
-                // ── Phase 2: Stagger children (slide up + fade + scale) ──
+                // ── Phase 3: Stagger children (diagonal entry) ──
                 for (int i = 0; i < staggerTargets.Count; i++)
                 {
                     if (staggerTargets[i] == null) continue;
                     float childStart = 0.2f + i * staggerDelay;
-                    float childT = Mathf.Clamp01((t - childStart) / 0.35f);
-                    float ease = 1f - Mathf.Pow(1f - childT, 3f);
+                    float childT = Mathf.Clamp01((t - childStart) / 0.4f);
+                    // OutBack overshoot
+                    float e = 1f - Mathf.Pow(1f - childT, 3f) * (1f - childT * 1.15f);
 
                     var cg2 = staggerTargets[i].GetComponent<CanvasGroup>();
-                    if (cg2 != null) cg2.alpha = ease;
+                    if (cg2 != null) cg2.alpha = Mathf.Clamp01(childT * 2.5f);
 
-                    // Slide up from 40px below
                     var origin = staggerTargets[i].GetComponent<StaggerOrigin>();
-                    float baseY = origin != null ? origin.originY : staggerTargets[i].anchoredPosition.y;
-                    staggerTargets[i].anchoredPosition =
-                        new Vector2(staggerTargets[i].anchoredPosition.x, Mathf.Lerp(baseY - 40f, baseY, ease));
+                    if (origin != null)
+                    {
+                        Vector2 start = origin.pos + new Vector2(origin.side * 120f, -30f);
+                        staggerTargets[i].anchoredPosition = Vector2.LerpUnclamped(start, origin.pos, e);
+                    }
 
-                    // Scale from 0.85 to 1.0
-                    staggerTargets[i].localScale = Vector3.Lerp(new Vector3(0.85f, 0.85f, 1f), Vector3.one, ease);
+                    staggerTargets[i].localScale = Vector3.LerpUnclamped(
+                        new Vector3(0.85f, 0.85f, 1f), Vector3.one, e);
                 }
 
-                // ── Phase 3: Score count-up ──
+                // ── Phase 4: Score count-up with glow pulse ──
                 if (scoreCountTMP != null && !countDone)
                 {
-                    float countStart = 0.5f;
+                    float countStart = 0.55f;
                     if (t > countStart)
                     {
                         countTimer += Time.unscaledDeltaTime;
-                        float countDuration = Mathf.Clamp(targetScore * 0.003f, 0.4f, 1.5f);
+                        float countDuration = Mathf.Clamp(targetScore * 0.002f, 0.5f, 2.0f);
                         float countProgress = Mathf.Clamp01(countTimer / countDuration);
-                        // Ease-out for deceleration effect
-                        float easeCount = 1f - Mathf.Pow(1f - countProgress, 2f);
+                        float easeCount = 1f - Mathf.Pow(1f - countProgress, 3f);
                         displayedScore = Mathf.RoundToInt(Mathf.Lerp(0f, targetScore, easeCount));
-                        scoreCountTMP.text = displayedScore.ToString();
+                        scoreCountTMP.text = displayedScore.ToString("N0");
+
+                        // Score glow intensifies as count progresses
+                        if (scoreGlow != null)
+                        {
+                            float glowA = Mathf.Lerp(0f, 0.35f, easeCount);
+                            scoreGlow.color = new Color(Accent1.r, Accent1.g, Accent1.b, glowA);
+                        }
 
                         if (countProgress >= 1f)
                         {
-                            scoreCountTMP.text = targetScore.ToString();
+                            scoreCountTMP.text = targetScore.ToString("N0");
                             countDone = true;
                         }
                     }
                 }
 
-                // ── Phase 4: Title glow pulse (continuous) ──
+                // ── Phase 5: Title gradient pulse (continuous) ──
                 if (titleTMP != null && t > 0.3f)
                 {
-                    float pulse = 0.85f + 0.15f * Mathf.Sin(t * 2.5f);
-                    Color c = AccentGold;
-                    titleTMP.color = new Color(c.r, c.g, c.b, pulse);
+                    float pulse = Mathf.Sin(t * 2.5f) * 0.5f + 0.5f;
+                    Color c1 = Color.Lerp(Accent1, Accent2, pulse);
+                    Color c2 = Color.Lerp(Accent2, Accent1, pulse);
+                    titleTMP.colorGradient = new VertexGradient(c1, c2, c1, c2);
                 }
 
-                // Done check
-                if (!done && t > fadeDuration + staggerTargets.Count * staggerDelay + 1.5f)
+                if (!done && t > fadeDuration + staggerTargets.Count * staggerDelay + 2f)
                     done = true;
             }
         }
 
-        // ─── ACCENT LINE PULSE ANIMATOR ─────────────────────────────────
-        class AccentLinePulse : MonoBehaviour
+        // ═══════════════════════════════════════════════════════════════
+        // FLUID BUTTON ANIMATOR — Premium hover/press etkileşimi
+        // ═══════════════════════════════════════════════════════════════
+        class FluidButtonAnimator : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler,
+            IPointerDownHandler, IPointerUpHandler
         {
-            public Image lineImage;
-            public Color baseColor;
-            public float speed = 1.5f;
+            public Image targetGraphic;
+            public Color normalColor;
+            public Color hoverColor;
+            public Color pressColor;
+
+            Vector3 _targetScale = Vector3.one;
+            Quaternion _targetRot = Quaternion.identity;
+            Color _targetColor;
+
+            void Start()
+            {
+                _targetColor = normalColor;
+                if (targetGraphic) targetGraphic.color = normalColor;
+            }
 
             void Update()
             {
-                if (lineImage == null) return;
-                float a = 0.7f + 0.3f * Mathf.Sin(Time.unscaledTime * speed);
-                lineImage.color = new Color(baseColor.r, baseColor.g, baseColor.b, a);
+                transform.localScale = Vector3.Lerp(transform.localScale, _targetScale, Time.unscaledDeltaTime * 14f);
+                transform.localRotation = Quaternion.Slerp(transform.localRotation, _targetRot, Time.unscaledDeltaTime * 12f);
+                if (targetGraphic)
+                    targetGraphic.color = Color.Lerp(targetGraphic.color, _targetColor, Time.unscaledDeltaTime * 16f);
+            }
+
+            public void OnPointerEnter(PointerEventData e)
+            {
+                _targetScale = Vector3.one * 1.04f;
+                _targetRot = Quaternion.Euler(0, 0, 0.8f);
+                _targetColor = hoverColor;
+            }
+            public void OnPointerExit(PointerEventData e)
+            {
+                _targetScale = Vector3.one;
+                _targetRot = Quaternion.identity;
+                _targetColor = normalColor;
+            }
+            public void OnPointerDown(PointerEventData e)
+            {
+                _targetScale = Vector3.one * 0.96f;
+                _targetRot = Quaternion.Euler(0, 0, -0.5f);
+                _targetColor = pressColor;
+                Settings.HapticManager.Light();
+            }
+            public void OnPointerUp(PointerEventData e)
+            {
+                _targetScale = Vector3.one * 1.04f;
+                _targetColor = hoverColor;
             }
         }
 
-        // ─── STAGGER ORIGIN ─────────────────────────────────────────────
-        class StaggerOrigin : MonoBehaviour
+        // ═══════════════════════════════════════════════════════════════
+        // PRIMARY BUTTON GLOW PULSE
+        // ═══════════════════════════════════════════════════════════════
+        class PrimaryGlowPulse : MonoBehaviour
         {
-            public float originY;
+            public Outline glowOutline;
+            public float speed = 2.5f;
+            public float minAlpha = 0.15f;
+            public float maxAlpha = 0.5f;
+
+            void Update()
+            {
+                if (!glowOutline) return;
+                float alpha = Mathf.Lerp(minAlpha, maxAlpha, (Mathf.Sin(Time.unscaledTime * speed) + 1f) / 2f);
+                var c = glowOutline.effectColor;
+                glowOutline.effectColor = new Color(c.r, c.g, c.b, alpha);
+            }
         }
 
-        // ─── DATA ───────────────────────────────────────────────────────
+        // ═══════════════════════════════════════════════════════════════
+        // GRADIENT BORDER PULSE
+        // ═══════════════════════════════════════════════════════════════
+        class GradientBorderPulse : MonoBehaviour
+        {
+            public Outline outline;
+            void Update()
+            {
+                if (!outline) return;
+                float t = Time.unscaledTime;
+                float r = Mathf.Lerp(CardBorderA.r, CardBorderB.r, Mathf.Sin(t * 1.2f) * 0.5f + 0.5f);
+                float g = Mathf.Lerp(CardBorderA.g, CardBorderB.g, Mathf.Sin(t * 1.2f) * 0.5f + 0.5f);
+                float b = Mathf.Lerp(CardBorderA.b, CardBorderB.b, Mathf.Sin(t * 1.2f) * 0.5f + 0.5f);
+                float a = 0.3f + 0.15f * Mathf.Sin(t * 2f);
+                outline.effectColor = new Color(r, g, b, a);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // FLOATING PARTICLE MOTES
+        // ═══════════════════════════════════════════════════════════════
+        class FloatingMotes : MonoBehaviour
+        {
+            public List<RectTransform> dots = new List<RectTransform>();
+            public List<Image> imgs = new List<Image>();
+            void Update()
+            {
+                float ut = Time.unscaledTime;
+                for (int i = 0; i < dots.Count; i++)
+                {
+                    if (!dots[i]) continue;
+                    float o = i * 2.3f;
+                    dots[i].anchoredPosition += new Vector2(
+                        Mathf.Cos(ut * 0.4f + o) * 5f * Time.unscaledDeltaTime,
+                        Mathf.Sin(ut * 0.55f + o) * 7f * Time.unscaledDeltaTime);
+                    if (imgs[i])
+                    {
+                        float a = 0.05f + 0.07f * Mathf.Sin(ut * 0.9f + o);
+                        var c = imgs[i].color;
+                        imgs[i].color = new Color(c.r, c.g, c.b, a);
+                    }
+                }
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // STAGGER ORIGIN
+        // ═══════════════════════════════════════════════════════════════
+        class StaggerOrigin : MonoBehaviour
+        {
+            public Vector2 pos;
+            public float side;
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // DATA
+        // ═══════════════════════════════════════════════════════════════
         public class Data
         {
             public int score;
             public int highScore;
             public int level;
             public float playTimeSeconds;
+            public int nearMisses;
             public List<string> achievements;
             public System.Action onRestart;
             public System.Action onMainMenu;
@@ -176,10 +323,14 @@ namespace Gazze.UI
             public System.Action onSettings;
         }
 
-        // ─── BUILD ──────────────────────────────────────────────────────
+        // ═══════════════════════════════════════════════════════════════
+        // BUILD — Ana yapım metodu
+        // ═══════════════════════════════════════════════════════════════
         public static GameObject Build(Data data)
         {
-            // Canvas setup
+            bool isLandscape = Screen.width > Screen.height;
+
+            // ── Canvas Setup ──
             GameObject canvasGO = new GameObject("GameOverCanvas",
                 typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             Canvas canvas = canvasGO.GetComponent<Canvas>();
@@ -187,209 +338,354 @@ namespace Gazze.UI
             canvas.sortingOrder = 100;
             CanvasScaler scaler = canvasGO.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1080, 1920);
-            scaler.matchWidthOrHeight = 0.5f;
+
+            // Portrait: reference 1080x1920, scale by width (narrowest axis dominates).
+            // Landscape: reference 1920x1080, scale by height (shortest axis dominates).
+            // This ensures the card never overflows the screen in either orientation.
+            if (isLandscape)
+            {
+                scaler.referenceResolution = new Vector2(1920, 1080);
+                scaler.matchWidthOrHeight = 1f; // height-dominant in landscape
+            }
+            else
+            {
+                scaler.referenceResolution = new Vector2(1080, 1920);
+                scaler.matchWidthOrHeight = 0f; // width-dominant in portrait
+            }
 
             EnsureEventSystem();
-
-            // ScreenshotShareManager'ı garantile
             EnsureScreenshotShareManager(canvasGO);
 
-            // ── Full-screen dimmer ──
-            GameObject dimGO = new GameObject("Dimmer", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
-            dimGO.transform.SetParent(canvasGO.transform, false);
-            Stretch(dimGO.GetComponent<RectTransform>());
-            dimGO.GetComponent<Image>().color = BgDim;
+            // ── Responsive layout parameters ──
+            // uiScale: how much to shrink content relative to the reference design.
+            // Portrait reference is 1080x1920. Landscape reference is 1920x1080.
+            // We scale by the SHORT side so nothing overflows.
+            float shortSideRef    = isLandscape ? 1080f : 1920f;
+            float shortSideScreen = isLandscape ? Screen.height : Screen.height;
+            float uiScale = Mathf.Clamp(shortSideScreen / shortSideRef, 0.45f, 1.0f);
 
-            var animator = dimGO.AddComponent<GameOverPanelAnimator>();
-            animator.cg = dimGO.GetComponent<CanvasGroup>();
+            // Card dimensions — landscape gets wide+short, portrait gets narrow+tall
+            float cardW, cardH;
+            if (isLandscape)
+            {
+                // In landscape canvas space (1920x1080 ref), card fills most of the height
+                // and about half the width so it looks like a centred popup.
+                cardH = Mathf.Clamp(1080f * 0.92f * uiScale, 500f, 980f);
+                cardW = Mathf.Clamp(cardH * 0.76f, 420f, 760f); // ~4:3 ratio
+            }
+            else
+            {
+                cardW = Mathf.Clamp(1080f * 0.88f * uiScale, 480f, 720f);
+                cardH = Mathf.Clamp(cardW * 1.36f, 680f, 980f);
+            }
 
-            // ── Central card ──
-            GameObject cardGO = new GameObject("Card", typeof(RectTransform), typeof(Image), typeof(Outline));
-            cardGO.transform.SetParent(dimGO.transform, false);
-            RectTransform cardRt = cardGO.GetComponent<RectTransform>();
-            cardRt.anchorMin = new Vector2(0.5f, 0.5f);
-            cardRt.anchorMax = new Vector2(0.5f, 0.5f);
-            cardRt.sizeDelta = new Vector2(680, 820);
-            cardRt.anchoredPosition = new Vector2(0, 30);
-            cardGO.GetComponent<Image>().color = CardBg;
-            var outline = cardGO.GetComponent<Outline>();
-            outline.effectColor = CardBorder;
-            outline.effectDistance = new Vector2(1.5f, -1.5f);
+            // Font scale: keep text readable but don't exceed design maximums
+            float fs = uiScale; // shorthand
 
-            animator.cardRT = cardRt;
+            // Vertical position multiplier (layout positions were designed for portrait)
+            // In landscape, compress Y positions to fit the shorter card height
+            float yMult = isLandscape ? (cardH / 980f) : uiScale;
 
-            // ── Top accent line (pulsing) ──
-            var topLine = CreateAccentLine(cardGO.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), 3f, AccentCyan);
-            var topPulse = topLine.AddComponent<AccentLinePulse>();
-            topPulse.lineImage = topLine.GetComponent<Image>();
-            topPulse.baseColor = AccentCyan;
-            topPulse.speed = 2f;
+            // ── Root (AnimateTarget) ──
+            var root = MakeGO("Root", canvasGO.transform, typeof(CanvasGroup));
+            Stretch(root.GetComponent<RectTransform>());
+            var animator = root.AddComponent<GameOverPanelAnimator>();
+            animator.cg = root.GetComponent<CanvasGroup>();
 
-            // ═════════════════════════════════════════════════════════════
-            // CONTENT
-            // ═════════════════════════════════════════════════════════════
+            // ── Blur BG ──
+            Texture2D blurTex = CaptureBlur();
+            if (blurTex != null)
+            {
+                var blurGO = new GameObject("Blur", typeof(RectTransform), typeof(RawImage));
+                blurGO.transform.SetParent(root.transform, false);
+                Stretch(blurGO.GetComponent<RectTransform>());
+                var ri = blurGO.GetComponent<RawImage>();
+                ri.texture = blurTex;
+                ri.color = new Color(1, 1, 1, 0);
+                ri.raycastTarget = false;
+                animator.blurImg = ri;
+            }
 
+            // ── Tint overlay ──
+            var tintGO = MakeGO("Tint", root.transform, typeof(Image));
+            Stretch(tintGO.GetComponent<RectTransform>());
+            tintGO.GetComponent<Image>().color = BgTint;
+            tintGO.GetComponent<Image>().raycastTarget = false;
+
+            // ── Ambient motes ──
+            SpawnMotes(root.transform);
+
+            // ═══════════════════════════════════════════════════════════
+            // MAIN CARD
+            // ═══════════════════════════════════════════════════════════
+            var card = new GameObject("Card", typeof(RectTransform), typeof(Image), typeof(Outline), typeof(Shadow));
+            card.transform.SetParent(root.transform, false);
+            var crt = card.GetComponent<RectTransform>();
+            crt.anchorMin = crt.anchorMax = new Vector2(0.5f, 0.5f);
+            crt.sizeDelta = new Vector2(cardW, cardH);
+            crt.anchoredPosition = Vector2.zero;
+            card.GetComponent<Image>().color = CardGlass;
+            var ol = card.GetComponent<Outline>();
+            ol.effectColor = CardBorderA;
+            ol.effectDistance = new Vector2(1.5f, -1.5f);
+            card.AddComponent<GradientBorderPulse>().outline = ol;
+            var sh = card.GetComponent<Shadow>();
+            sh.effectColor = new Color(0, 0, 0, 0.5f);
+            sh.effectDistance = new Vector2(6, -8);
+
+            animator.cardRT = crt;
+
+            // Glass inner layer
+            var inner = MakeGO("InnerGlass", card.transform, typeof(Image));
+            var irt = inner.GetComponent<RectTransform>();
+            Stretch(irt);
+            irt.offsetMin = new Vector2(3, 3); irt.offsetMax = new Vector2(-3, -3);
+            inner.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.025f);
+            inner.GetComponent<Image>().raycastTarget = false;
+
+            MakeAccentBar(card.transform, true);
+            MakeAccentBar(card.transform, false);
+
+            // ═══════════════════════════════════════════════════════════
+            // CONTENT — Staggered elements
+            // ═══════════════════════════════════════════════════════════
             var staggerList = new List<RectTransform>();
+            float innerW = cardW - 60f;
 
-            // (1) TITLE
-            string titleStr = Loc("Game_GameOver", "OYUN SONU");
-            var titleGO = MakeStaggerChild(cardGO.transform, "Title", new Vector2(0, 340), new Vector2(600, 70));
+            // ── (1) TITLE ──
+            string titleStr = Loc("Game_GameOver", "OYUN BİTTİ");
+            float titleY = cardH * 0.43f;
+            float titleH  = Mathf.Max(50f * fs, 42f);
+            var titleGO = Stagger(card.transform, "Title", new Vector2(0, titleY), new Vector2(innerW, titleH), -1f);
             staggerList.Add(titleGO.GetComponent<RectTransform>());
 
-            var titleTMP = titleGO.AddComponent<TextMeshProUGUI>();
-            titleTMP.text = titleStr;
-            titleTMP.fontSize = 52;
-            titleTMP.fontStyle = FontStyles.Bold;
-            titleTMP.alignment = TextAlignmentOptions.Center;
-            titleTMP.color = AccentGold;
-            titleTMP.characterSpacing = 6;
-            titleTMP.raycastTarget = false;
+            var titleTMP = AddTMP(titleGO.transform, "T", titleStr, Mathf.RoundToInt(Mathf.Max(48 * fs, 28)),
+                FontStyles.Bold, Accent1, Vector2.zero, new Vector2(innerW, titleH));
+            titleTMP.enableAutoSizing = true;
+            titleTMP.fontSizeMin = 20; titleTMP.fontSizeMax = Mathf.RoundToInt(52 * fs);
+            titleTMP.characterSpacing = 10;
+            titleTMP.enableVertexGradient = true;
+            titleTMP.colorGradient = new VertexGradient(Accent1, Accent2, Accent1, Accent2);
             animator.titleTMP = titleTMP;
 
-            // (2) Separator under title
-            var sep1 = MakeStaggerChild(cardGO.transform, "Sep1", new Vector2(0, 295), new Vector2(500, 2));
+            // ── (2) Separator ──
+            float sep1Y = cardH * 0.385f;
+            var sep1 = Stagger(card.transform, "Sep1", new Vector2(0, sep1Y), new Vector2(innerW * 0.85f, 2), 1f);
             staggerList.Add(sep1.GetComponent<RectTransform>());
-            sep1.AddComponent<Image>().color = SeparatorColor;
+            sep1.AddComponent<Image>().color = SepColor;
 
-            // (3) Score — big hero number with count-up animation
-            var scoreGO = MakeStaggerChild(cardGO.transform, "Score", new Vector2(0, 225), new Vector2(600, 90));
-            staggerList.Add(scoreGO.GetComponent<RectTransform>());
+            // ── (3) Score section ──
+            float scoreY = cardH * 0.28f;
+            float scoreH = Mathf.Max(cardH * 0.17f, 100f);
+            var scoreSection = Stagger(card.transform, "ScoreSection", new Vector2(0, scoreY), new Vector2(innerW, scoreH), -1f);
+            staggerList.Add(scoreSection.GetComponent<RectTransform>());
 
-            string scoreLabel = Loc("Game_Score", "SKOR");
-            var scoreLabelTMP = AddTMP(scoreGO.transform, "Label", scoreLabel, 18,
-                FontStyles.Bold, TextSecondary, new Vector2(0, 25), new Vector2(300, 28));
-            scoreLabelTMP.characterSpacing = 4;
-
-            // Score number starts at 0, animator will count up
-            var scoreNumTMP = AddTMP(scoreGO.transform, "Num", "0", 56,
-                FontStyles.Bold, TextPrimary, new Vector2(0, -15), new Vector2(400, 65));
-            animator.scoreCountTMP = scoreNumTMP;
-            animator.targetScore = data.score;
-
-            // New high score badge
             bool isNewHigh = data.score >= data.highScore && data.score > 0;
             if (isNewHigh)
             {
-                string newHS = Loc("Game_NewHighScore", "YENI REKOR!");
-                var badgeGO = new GameObject("Badge", typeof(RectTransform), typeof(Image));
-                badgeGO.transform.SetParent(scoreGO.transform, false);
+                string newHS = Loc("Game_NewHighScore", "YENi REKOR!");
+                var badgeGO = new GameObject("Badge", typeof(RectTransform), typeof(Image), typeof(Outline));
+                badgeGO.transform.SetParent(scoreSection.transform, false);
                 var badgeRt = badgeGO.GetComponent<RectTransform>();
-                badgeRt.anchorMin = badgeRt.anchorMax = new Vector2(0.5f, 0.5f);
-                badgeRt.sizeDelta = new Vector2(200, 30);
-                badgeRt.anchoredPosition = new Vector2(0, -52);
-                badgeGO.GetComponent<Image>().color = new Color(AccentGold.r, AccentGold.g, AccentGold.b, 0.18f);
-
-                // Badge pulse animator
-                var badgePulse = badgeGO.AddComponent<AccentLinePulse>();
-                badgePulse.lineImage = badgeGO.GetComponent<Image>();
-                badgePulse.baseColor = new Color(AccentGold.r, AccentGold.g, AccentGold.b, 0.18f);
-                badgePulse.speed = 3f;
-
-                AddTMP(badgeGO.transform, "BadgeTxt", "< " + newHS + " >", 14,
-                    FontStyles.Bold, AccentGold, Vector2.zero, new Vector2(190, 28));
+                badgeRt.anchorMin = badgeRt.anchorMax = new Vector2(0.5f, 1f);
+                badgeRt.pivot = new Vector2(0.5f, 1f);
+                badgeRt.sizeDelta = new Vector2(Mathf.Min(260f * fs, innerW * 0.6f), Mathf.Max(32f * fs, 28f));
+                badgeRt.anchoredPosition = new Vector2(0, 0);
+                badgeGO.GetComponent<Image>().color = new Color(Accent1.r, Accent1.g, Accent1.b, 0.18f);
+                var nrOl = badgeGO.GetComponent<Outline>();
+                nrOl.effectColor = new Color(Accent1.r, Accent1.g, Accent1.b, 0.3f);
+                nrOl.effectDistance = new Vector2(1, -1);
+                var nrTmp = AddTMP(badgeGO.transform, "BadgeTxt", newHS, Mathf.RoundToInt(Mathf.Max(15 * fs, 11)),
+                    FontStyles.Bold, Accent1, Vector2.zero, badgeRt.sizeDelta);
+                nrTmp.characterSpacing = 5;
             }
 
-            // (4) Stat cards row
-            var statsRow = MakeStaggerChild(cardGO.transform, "Stats", new Vector2(0, 80), new Vector2(620, 100));
+            // Score label
+            string scoreLbl = Loc("Game_Score", "SKOR");
+            var scoreLabelTMP = AddTMP(scoreSection.transform, "ScoreLbl", scoreLbl,
+                Mathf.RoundToInt(Mathf.Max(14 * fs, 10)),
+                FontStyles.Bold, TextFaded,
+                new Vector2(0, isNewHigh ? scoreH * 0.1f : scoreH * 0.25f),
+                new Vector2(innerW, Mathf.Max(22f * fs, 18f)));
+            scoreLabelTMP.characterSpacing = 6;
+
+            // Score number
+            int scoreFontMax = Mathf.RoundToInt(Mathf.Max(isLandscape ? 54 * fs : 72 * fs, 28));
+            var scoreNumTMP = AddTMP(scoreSection.transform, "ScoreNum", "0", scoreFontMax,
+                FontStyles.Bold, TextWhite,
+                new Vector2(0, isNewHigh ? -scoreH * 0.18f : -scoreH * 0.05f),
+                new Vector2(innerW, scoreH * 0.6f));
+            scoreNumTMP.enableAutoSizing = true;
+            scoreNumTMP.fontSizeMin = 20; scoreNumTMP.fontSizeMax = scoreFontMax;
+            scoreNumTMP.enableVertexGradient = true;
+            scoreNumTMP.colorGradient = new VertexGradient(Accent3, Accent3, Accent1, Accent2);
+            animator.scoreCountTMP = scoreNumTMP;
+            animator.targetScore = data.score;
+
+            // Score glow
+            var scoreGlowGO = new GameObject("ScoreGlow", typeof(RectTransform), typeof(Image));
+            scoreGlowGO.transform.SetParent(scoreSection.transform, false);
+            scoreGlowGO.transform.SetAsFirstSibling();
+            var sgRt = scoreGlowGO.GetComponent<RectTransform>();
+            sgRt.anchorMin = sgRt.anchorMax = new Vector2(0.5f, 0.5f);
+            sgRt.sizeDelta = new Vector2(innerW * 0.8f, scoreH * 0.65f);
+            sgRt.anchoredPosition = Vector2.zero;
+            var sgImg = scoreGlowGO.GetComponent<Image>();
+            sgImg.color = new Color(Accent1.r, Accent1.g, Accent1.b, 0f);
+            sgImg.raycastTarget = false;
+            animator.scoreGlow = sgImg;
+
+            // Score underline
+            var scoreBar = new GameObject("ScoreBar", typeof(RectTransform), typeof(Image));
+            scoreBar.transform.SetParent(scoreSection.transform, false);
+            var sbRt = scoreBar.GetComponent<RectTransform>();
+            sbRt.anchorMin = new Vector2(0.1f, 0f); sbRt.anchorMax = new Vector2(0.9f, 0f);
+            sbRt.pivot = new Vector2(0.5f, 0f);
+            sbRt.sizeDelta = new Vector2(0, 3);
+            sbRt.anchoredPosition = Vector2.zero;
+            scoreBar.GetComponent<Image>().color = new Color(Accent1.r, Accent1.g, Accent1.b, 0.5f);
+
+            // ── (4) Stat cards row ──
+            float statsY = cardH * 0.115f;
+            float statsH  = Mathf.Max(cardH * 0.115f, 72f);
+            var statsRow = Stagger(card.transform, "Stats", new Vector2(0, statsY), new Vector2(innerW, statsH), 1f);
             staggerList.Add(statsRow.GetComponent<RectTransform>());
 
             var hlg = statsRow.AddComponent<HorizontalLayoutGroup>();
-            hlg.spacing = 12;
+            hlg.spacing = Mathf.Max(8f * fs, 5f);
             hlg.childAlignment = TextAnchor.MiddleCenter;
-            hlg.childControlWidth = true;
-            hlg.childControlHeight = true;
-            hlg.childForceExpandWidth = true;
-            hlg.childForceExpandHeight = true;
-            hlg.padding = new RectOffset(6, 6, 6, 6);
+            hlg.childControlWidth = true; hlg.childControlHeight = true;
+            hlg.childForceExpandWidth = true; hlg.childForceExpandHeight = true;
+            hlg.padding = new RectOffset(4, 4, 3, 3);
 
-            string hsLabel = Loc("Game_HighScore", "EN YUKSEK");
-            string lvlLabel = Loc("Game_Level", "SEVIYE");
-            string timeLabel = Loc("Game_PlayTime", "SURE");
+            string hsLabel  = Loc("Game_HighScore", "REKOR");
+            string nmLabel  = Loc("Game_NearMisses", "MAKAS");
+            string lvlLabel = Loc("Game_Level", "SEVİYE");
+            string timeLabel = Loc("Game_PlayTime", "SÜRE");
 
-            BuildStatCard(hlg.transform, "HI", hsLabel, data.highScore.ToString(), AccentGold);
-            BuildStatCard(hlg.transform, "LV", lvlLabel, data.level.ToString(), AccentCyan);
-            BuildStatCard(hlg.transform, "TM", timeLabel, FormatTime(data.playTimeSeconds), new Color32(140, 220, 255, 255));
+            float statFontScale = fs;
+            BuildStatCard(hlg.transform, hsLabel,  data.highScore.ToString(),             StatGold,  statFontScale);
+            BuildStatCard(hlg.transform, nmLabel,  data.nearMisses.ToString(),            StatAmber, statFontScale);
+            BuildStatCard(hlg.transform, lvlLabel, data.level.ToString(),                 StatAccent, statFontScale);
+            BuildStatCard(hlg.transform, timeLabel, FormatTime(data.playTimeSeconds),     StatIvory, statFontScale);
 
-            // (5) Separator
-            var sep2 = MakeStaggerChild(cardGO.transform, "Sep2", new Vector2(0, 20), new Vector2(500, 2));
+            // ── (5) Separator ──
+            float sep2Y = cardH * 0.045f;
+            var sep2 = Stagger(card.transform, "Sep2", new Vector2(0, sep2Y), new Vector2(innerW * 0.85f, 2), -1f);
             staggerList.Add(sep2.GetComponent<RectTransform>());
-            sep2.AddComponent<Image>().color = SeparatorColor;
+            sep2.AddComponent<Image>().color = SepColor;
 
-            // (6) Achievements
+            // ── (6) Achievements section ──
             string achLabel = Loc("Game_Achievements", "BASARIMLAR");
-            string achNone = Loc("Game_None", "-");
-            string achText = data.achievements != null && data.achievements.Count > 0
-                ? string.Join("  -  ", data.achievements)
-                : achNone;
+            float achY = -cardH * 0.055f;
+            float achH = Mathf.Max(cardH * 0.185f, 110f);
+            var achSection = Stagger(card.transform, "AchSection", new Vector2(0, achY), new Vector2(innerW, achH), 1f);
+            staggerList.Add(achSection.GetComponent<RectTransform>());
 
-            var achGO = MakeStaggerChild(cardGO.transform, "Ach", new Vector2(0, -35), new Vector2(600, 80));
-            staggerList.Add(achGO.GetComponent<RectTransform>());
+            var achLabelTMP = AddTMP(achSection.transform, "AchLbl", achLabel,
+                Mathf.RoundToInt(Mathf.Max(14 * fs, 10)),
+                FontStyles.Bold, TextFaded,
+                new Vector2(0, achH * 0.42f),
+                new Vector2(innerW, Mathf.Max(22f * fs, 16f)));
+            achLabelTMP.characterSpacing = 5;
 
-            var achLabelTMP = AddTMP(achGO.transform, "AchLabel", achLabel, 16,
-                FontStyles.Bold, TextSecondary, new Vector2(0, 22), new Vector2(580, 24));
-            achLabelTMP.characterSpacing = 3;
+            if (data.achievements != null && data.achievements.Count > 0)
+            {
+                var badgeContainer = new GameObject("BadgeContainer", typeof(RectTransform));
+                badgeContainer.transform.SetParent(achSection.transform, false);
+                var bcRt = badgeContainer.GetComponent<RectTransform>();
+                bcRt.anchorMin = new Vector2(0f, 0f); bcRt.anchorMax = new Vector2(1f, 0.78f);
+                bcRt.offsetMin = new Vector2(4, 2); bcRt.offsetMax = new Vector2(-4, 0);
 
-            var achValTMP = AddTMP(achGO.transform, "AchVal", achText, 20,
-                FontStyles.Italic, new Color32(200, 210, 240, 255), new Vector2(0, -8), new Vector2(580, 50));
-            achValTMP.textWrappingMode = TextWrappingModes.Normal;
-            achValTMP.overflowMode = TextOverflowModes.Ellipsis;
+                var vlg = badgeContainer.AddComponent<VerticalLayoutGroup>();
+                vlg.spacing = Mathf.Max(5f * fs, 4f);
+                vlg.childAlignment = TextAnchor.UpperCenter;
+                vlg.childControlWidth = true; vlg.childControlHeight = false;
+                vlg.childForceExpandWidth = true; vlg.childForceExpandHeight = false;
+                vlg.padding = new RectOffset(2, 2, 2, 2);
 
-            // (7) Bottom separator
-            var sep3 = MakeStaggerChild(cardGO.transform, "Sep3", new Vector2(0, -90), new Vector2(500, 2));
+                // Landscape: 3 per row to save vertical space; portrait: 2 per row
+                int achPerRow = isLandscape ? 3 : 2;
+                float rowH = Mathf.Max(38f * fs, 34f);
+                for (int rowStart = 0; rowStart < data.achievements.Count; rowStart += achPerRow)
+                {
+                    var row = new GameObject("AchRow", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+                    row.transform.SetParent(badgeContainer.transform, false);
+                    row.GetComponent<RectTransform>().sizeDelta = new Vector2(0, rowH);
+
+                    var rowHlg = row.GetComponent<HorizontalLayoutGroup>();
+                    rowHlg.spacing = Mathf.Max(8f * fs, 5f);
+                    rowHlg.childAlignment = TextAnchor.MiddleCenter;
+                    rowHlg.childControlWidth = true; rowHlg.childControlHeight = true;
+                    rowHlg.childForceExpandWidth = true; rowHlg.childForceExpandHeight = true;
+                    rowHlg.padding = new RectOffset(2, 2, 0, 0);
+
+                    int rowEnd = Mathf.Min(rowStart + achPerRow, data.achievements.Count);
+                    for (int i = rowStart; i < rowEnd; i++)
+                        BuildAchievementBadge(row.transform, data.achievements[i], fs);
+                }
+            }
+            else
+            {
+                string achNone = Loc("Game_None", "—");
+                AddTMP(achSection.transform, "AchNone", achNone, Mathf.RoundToInt(Mathf.Max(16 * fs, 12)),
+                    FontStyles.Italic, TextDim, new Vector2(0, -achH * 0.1f), new Vector2(innerW, 40));
+            }
+
+            // ── (7) Separator ──
+            float sep3Y = -cardH * 0.155f;
+            var sep3 = Stagger(card.transform, "Sep3", new Vector2(0, sep3Y), new Vector2(innerW * 0.85f, 2), -1f);
             staggerList.Add(sep3.GetComponent<RectTransform>());
-            sep3.AddComponent<Image>().color = SeparatorColor;
+            sep3.AddComponent<Image>().color = SepColor;
 
-            // (8) Buttons
-            string restartStr  = Loc("Game_Restart", "YENIDEN");
-            string menuStr     = Loc("Game_MainMenu", "MENU");
-            string shareStr    = Loc("Game_Share", "PAYLAS");
+            // ═══════════════════════════════════════════════════════════
+            // BUTTONS
+            // ═══════════════════════════════════════════════════════════
+            string restartStr  = Loc("Game_Restart", "TEKRAR DENE");
+            string menuStr     = Loc("Game_MainMenu", "ANA MENÜ");
+            string shareStr    = Loc("Game_Share", "PAYLAŞ");
             string settingsStr = Loc("Menu_Settings", "AYARLAR");
 
-            // Primary button (restart) – full width
-            var primaryBtn = MakeStaggerChild(cardGO.transform, "PrimaryBtn", new Vector2(0, -140), new Vector2(580, 64));
-            staggerList.Add(primaryBtn.GetComponent<RectTransform>());
-            BuildPremiumButton(primaryBtn, restartStr, BtnRestart, data.onRestart, 24, true);
+            // Minimum touch targets: 48px height regardless of scale
+            float primaryH   = Mathf.Max(cardH * 0.073f, 52f);
+            float secondaryH = Mathf.Max(cardH * 0.056f, 48f);
+            float btnW       = innerW;
 
-            // Secondary buttons row
-            var secRow = MakeStaggerChild(cardGO.transform, "SecBtns", new Vector2(0, -220), new Vector2(580, 52));
+            float primaryY   = -cardH * 0.22f;
+            float secondaryY = -cardH * 0.31f;
+            float hintY      = -cardH * 0.39f;
+
+            // ── Primary button ──
+            var primaryBtn = Stagger(card.transform, "PrimaryBtn", new Vector2(0, primaryY), new Vector2(btnW, primaryH), 1f);
+            staggerList.Add(primaryBtn.GetComponent<RectTransform>());
+            BuildPrimaryButton(primaryBtn, restartStr, BtnRestart, data.onRestart, fs);
+
+            // ── Secondary buttons row ──
+            var secRow = Stagger(card.transform, "SecBtns", new Vector2(0, secondaryY), new Vector2(btnW, secondaryH), -1f);
             staggerList.Add(secRow.GetComponent<RectTransform>());
 
             var secHlg = secRow.AddComponent<HorizontalLayoutGroup>();
-            secHlg.spacing = 10;
+            secHlg.spacing = Mathf.Max(8f * fs, 5f);
             secHlg.childAlignment = TextAnchor.MiddleCenter;
-            secHlg.childControlWidth = true;
-            secHlg.childControlHeight = true;
-            secHlg.childForceExpandWidth = true;
-            secHlg.childForceExpandHeight = true;
+            secHlg.childControlWidth = true; secHlg.childControlHeight = true;
+            secHlg.childForceExpandWidth = true; secHlg.childForceExpandHeight = true;
 
-            BuildSecondaryButton(secHlg.transform, menuStr, BtnMenu, data.onMainMenu);
-
-            // Share button → ScreenshotShareManager
             System.Action shareAction = () =>
             {
                 if (ScreenshotShareManager.Instance != null)
-                {
                     ScreenshotShareManager.Instance.CaptureAndShare(canvasGO);
-                }
-                else if (data.onShare != null)
-                {
-                    data.onShare();
-                }
+                else data.onShare?.Invoke();
             };
-            BuildSecondaryButton(secHlg.transform, shareStr, BtnShare, shareAction);
 
-            BuildSecondaryButton(secHlg.transform, settingsStr, BtnSettings, data.onSettings);
+            BuildSecondaryButton(secHlg.transform, menuStr,     BtnMenu,     data.onMainMenu, fs);
+            BuildSecondaryButton(secHlg.transform, shareStr,    BtnShare,    shareAction,     fs);
+            BuildSecondaryButton(secHlg.transform, settingsStr, BtnSettings, data.onSettings, fs);
 
-            // (9) Bottom accent line (pulsing)
-            var bottomLine = CreateAccentLine(cardGO.transform, new Vector2(0f, 0f), new Vector2(1f, 0f), 3f, AccentCyan);
-            var bottomPulse = bottomLine.AddComponent<AccentLinePulse>();
-            bottomPulse.lineImage = bottomLine.GetComponent<Image>();
-            bottomPulse.baseColor = AccentCyan;
-            bottomPulse.speed = 2f;
-
-            // ── Particles ──
-            CreateParticles(dimGO.transform);
+            // ── Hint text ──
+            var hint = Stagger(card.transform, "Hint", new Vector2(0, hintY), new Vector2(btnW, 18), 1f);
+            staggerList.Add(hint.GetComponent<RectTransform>());
+            AddTMP(hint.transform, "H", "GOREV: GAZZE", Mathf.RoundToInt(Mathf.Max(9 * fs, 8)),
+                FontStyles.Italic, new Color(1, 1, 1, 0.22f), Vector2.zero, new Vector2(btnW, 18));
 
             // ── Wire stagger list ──
             animator.staggerTargets = staggerList;
@@ -397,153 +693,370 @@ namespace Gazze.UI
             return canvasGO;
         }
 
-        // ─── STAT CARD ──────────────────────────────────────────────────
-        static void BuildStatCard(Transform parent, string icon, string label, string value, Color accent)
+        // ═══════════════════════════════════════════════════════════════
+        // STAT CARD — Glassmorphism stat tiles (no Unicode icons)
+        // ═══════════════════════════════════════════════════════════════
+        static void BuildStatCard(Transform parent, string label, string value, Color accent, float uiScale)
         {
-            var go = new GameObject("Stat", typeof(RectTransform), typeof(Image), typeof(Outline));
+            var go = new GameObject("Stat_" + label, typeof(RectTransform), typeof(Image), typeof(Outline));
             go.transform.SetParent(parent, false);
-            go.GetComponent<Image>().color = StatCardBg;
-            var ol = go.GetComponent<Outline>();
-            ol.effectColor = new Color(accent.r, accent.g, accent.b, 0.25f);
-            ol.effectDistance = new Vector2(1, -1);
+            go.GetComponent<Image>().color = StatBg;
+            var statOl = go.GetComponent<Outline>();
+            statOl.effectColor = new Color(accent.r, accent.g, accent.b, 0.25f);
+            statOl.effectDistance = new Vector2(1, -1);
 
-            // Top accent bar
-            var bar = new GameObject("Bar", typeof(RectTransform), typeof(Image));
+            // Top accent full-width bar
+            var bar = new GameObject("AccBar", typeof(RectTransform), typeof(Image));
             bar.transform.SetParent(go.transform, false);
             var barRt = bar.GetComponent<RectTransform>();
-            barRt.anchorMin = new Vector2(0.15f, 1f);
-            barRt.anchorMax = new Vector2(0.85f, 1f);
+            barRt.anchorMin = new Vector2(0.08f, 1f);
+            barRt.anchorMax = new Vector2(0.92f, 1f);
             barRt.pivot = new Vector2(0.5f, 1f);
-            barRt.sizeDelta = new Vector2(0, 2.5f);
+            barRt.sizeDelta = new Vector2(0, 3f);
             bar.GetComponent<Image>().color = accent;
 
-            // Icon badge (colored background + text)
-            var icoBg = new GameObject("IcoBg", typeof(RectTransform), typeof(Image));
-            icoBg.transform.SetParent(go.transform, false);
-            var icoBgRt = icoBg.GetComponent<RectTransform>();
-            icoBgRt.anchorMin = icoBgRt.anchorMax = new Vector2(0.5f, 0.5f);
-            icoBgRt.sizeDelta = new Vector2(36, 20);
-            icoBgRt.anchoredPosition = new Vector2(0, 20);
-            icoBg.GetComponent<Image>().color = new Color(accent.r, accent.g, accent.b, 0.2f);
-
-            AddTMP(icoBg.transform, "IcoTxt", icon, 10, FontStyles.Bold, accent,
-                Vector2.zero, new Vector2(34, 18));
+            int lblSize = Mathf.RoundToInt(Mathf.Max(12 * uiScale, 9));
+            int valSize = Mathf.RoundToInt(Mathf.Max(26 * uiScale, 14));
 
             // Label
-            var lbl = AddTMP(go.transform, "Lbl", label, 11, FontStyles.Bold, TextSecondary,
-                new Vector2(0, -2), new Vector2(140, 18));
+            var lbl = AddTMP(go.transform, "Lbl", label, lblSize, FontStyles.Bold,
+                new Color(accent.r, accent.g, accent.b, 0.85f),
+                new Vector2(0, 0), new Vector2(0, 0));
+            // Stretch label to top half of card
+            var lblRt = lbl.GetComponent<RectTransform>();
+            lblRt.anchorMin = new Vector2(0.05f, 0.55f); lblRt.anchorMax = new Vector2(0.95f, 1f);
+            lblRt.offsetMin = new Vector2(2, 2); lblRt.offsetMax = new Vector2(-2, -3);
             lbl.characterSpacing = 2;
+            lbl.enableAutoSizing = true;
+            lbl.fontSizeMin = 8; lbl.fontSizeMax = lblSize;
 
-            // Value
-            AddTMP(go.transform, "Val", value, 24, FontStyles.Bold, TextPrimary,
-                new Vector2(0, -26), new Vector2(140, 34));
+            // Value — stretch to bottom half
+            var valTMP = AddTMP(go.transform, "Val", value, valSize, FontStyles.Bold, TextWhite,
+                new Vector2(0, 0), new Vector2(0, 0));
+            var valRt = valTMP.GetComponent<RectTransform>();
+            valRt.anchorMin = new Vector2(0.05f, 0.05f); valRt.anchorMax = new Vector2(0.95f, 0.58f);
+            valRt.offsetMin = new Vector2(2, 2); valRt.offsetMax = new Vector2(-2, -2);
+            valTMP.enableVertexGradient = true;
+            valTMP.colorGradient = new VertexGradient(TextWhite, TextWhite, accent, accent);
+            valTMP.enableAutoSizing = true;
+            valTMP.fontSizeMin = 10; valTMP.fontSizeMax = valSize;
         }
 
-        // ─── PREMIUM BUTTON ─────────────────────────────────────────────
-        static void BuildPremiumButton(GameObject go, string label, Color color,
-            System.Action onClick, int fontSize = 20, bool isPrimary = false)
+        // ═══════════════════════════════════════════════════════════════
+        // ACHIEVEMENT BADGE — Individual styled pill
+        // ═══════════════════════════════════════════════════════════════
+        static void BuildAchievementBadge(Transform parent, string text, float uiScale = 1f)
+        {
+            var badge = new GameObject("AchBadge", typeof(RectTransform), typeof(Image), typeof(Outline));
+            badge.transform.SetParent(parent, false);
+            badge.GetComponent<Image>().color = AchBadgeBg;
+            var badgeOl = badge.GetComponent<Outline>();
+            badgeOl.effectColor = AchBorder;
+            badgeOl.effectDistance = new Vector2(1, -1);
+
+            // Get Theme to access Icon Path
+            var theme = AchievementTheme.GetTheme(text);
+            Sprite iconSprite = null;
+            if (!string.IsNullOrEmpty(theme.iconPath))
+            {
+                iconSprite = Resources.Load<Sprite>(theme.iconPath);
+            }
+
+            // Icon or Accent bar
+            var iconGO = new GameObject("Icon", typeof(RectTransform), typeof(Image));
+            iconGO.transform.SetParent(badge.transform, false);
+            var iRt = iconGO.GetComponent<RectTransform>();
+            var img = iconGO.GetComponent<Image>();
+
+            if (iconSprite != null)
+            {
+                // Real Icon
+                iRt.anchorMin = new Vector2(0, 0.5f);
+                iRt.anchorMax = new Vector2(0, 0.5f);
+                iRt.pivot = new Vector2(0, 0.5f);
+                iRt.sizeDelta = new Vector2(28 * uiScale, 28 * uiScale);
+                iRt.anchoredPosition = new Vector2(8, 0);
+                
+                img.sprite = iconSprite;
+                img.color = Color.white;
+                img.preserveAspect = true;
+            }
+            else
+            {
+                // Fallback Accent bar
+                iRt.anchorMin = new Vector2(0, 0.15f);
+                iRt.anchorMax = new Vector2(0, 0.85f);
+                iRt.pivot = new Vector2(0, 0.5f);
+                iRt.sizeDelta = new Vector2(3, 0);
+                iRt.anchoredPosition = new Vector2(6, 0);
+                img.color = AchIcon;
+            }
+
+            // Text (uses badge width, auto-sizes to fit)
+            int achFontMax = Mathf.RoundToInt(Mathf.Max(13 * uiScale, 9));
+            var tmp = AddTMP(badge.transform, "Txt", text, achFontMax, FontStyles.Bold, AchText,
+                Vector2.zero, Vector2.zero);
+            // Stretch text to fill badge
+            var txtRt = tmp.GetComponent<RectTransform>();
+            txtRt.anchorMin = new Vector2(0, 0);
+            txtRt.anchorMax = new Vector2(1, 1);
+            
+            // Offset text if icon exists
+            float leftOffset = iconSprite != null ? 40f * uiScale : 14f;
+            txtRt.offsetMin = new Vector2(leftOffset, 2);
+            txtRt.offsetMax = new Vector2(-4, -2);
+            
+            tmp.alignment = TextAlignmentOptions.Left;
+            tmp.enableAutoSizing = true;
+            tmp.fontSizeMin = 8;
+            tmp.fontSizeMax = achFontMax;
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // PRIMARY BUTTON — Full-width premium gold
+        // ═══════════════════════════════════════════════════════════════
+        static void BuildPrimaryButton(GameObject go, string label, Color color, System.Action onClick, float uiScale = 1f)
         {
             var img = go.AddComponent<Image>();
-            img.color = color;
+            img.color = new Color(color.r * 0.3f, color.g * 0.3f, color.b * 0.3f, 0.85f);
 
             var btn = go.AddComponent<Button>();
             var cb = btn.colors;
-            cb.normalColor = color;
-            cb.highlightedColor = Color.Lerp(color, Color.white, 0.15f);
-            cb.pressedColor = Color.Lerp(color, Color.black, 0.2f);
-            cb.disabledColor = new Color(0.35f, 0.35f, 0.4f, 0.5f);
-            cb.fadeDuration = 0.08f;
+            cb.normalColor = Color.white;
+            cb.highlightedColor = Color.white;
+            cb.pressedColor = Color.white;
+            cb.disabledColor = Color.white;
+            cb.fadeDuration = 0f;
             btn.colors = cb;
             if (onClick != null) btn.onClick.AddListener(() => onClick());
 
-            // Scale animator
+            // Fluid animator
+            var fluid = go.AddComponent<FluidButtonAnimator>();
+            fluid.targetGraphic = img;
+            fluid.normalColor = new Color(color.r * 0.3f, color.g * 0.3f, color.b * 0.3f, 0.85f);
+            fluid.hoverColor = new Color(color.r * 0.4f, color.g * 0.4f, color.b * 0.4f, 0.92f);
+            fluid.pressColor = new Color(color.r * 0.2f, color.g * 0.2f, color.b * 0.2f, 0.95f);
+
+            // ButtonScaleAnimator for haptics
             var sa = go.AddComponent<ButtonScaleAnimator>();
-            sa.pressedScale = 0.94f;
-            sa.animationSpeed = 24f;
+            sa.pressedScale = 0.96f;
+            sa.animationSpeed = 20f;
             sa.useDefaultClickSound = true;
 
-            // Outline glow
-            var ol = go.AddComponent<Outline>();
-            ol.effectColor = new Color(color.r, color.g, color.b, 0.3f);
-            ol.effectDistance = new Vector2(2, -2);
+            // Glow outline
+            var glowOl = go.AddComponent<Outline>();
+            glowOl.effectColor = new Color(color.r, color.g, color.b, 0.35f);
+            glowOl.effectDistance = new Vector2(2, -2);
 
-            // Label
-            var txt = AddTMP(go.transform, "Lbl", label, fontSize,
-                FontStyles.Bold, Color.white, Vector2.zero, new Vector2(400, 50));
-            txt.characterSpacing = isPrimary ? 5 : 2;
+            // Glow pulse
+            var gp = go.AddComponent<PrimaryGlowPulse>();
+            gp.glowOutline = glowOl;
+            gp.speed = 2.5f;
+
+            // Border accent
+            var borderLine = new GameObject("BorderLine", typeof(RectTransform), typeof(Image));
+            borderLine.transform.SetParent(go.transform, false);
+            var blRt = borderLine.GetComponent<RectTransform>();
+            blRt.anchorMin = new Vector2(0, 0);
+            blRt.anchorMax = new Vector2(1, 0);
+            blRt.pivot = new Vector2(0.5f, 0);
+            blRt.sizeDelta = new Vector2(0, 2);
+            borderLine.GetComponent<Image>().color = new Color(color.r, color.g, color.b, 0.6f);
+
+            var topLine = new GameObject("TopLine", typeof(RectTransform), typeof(Image));
+            topLine.transform.SetParent(go.transform, false);
+            var tlRt = topLine.GetComponent<RectTransform>();
+            tlRt.anchorMin = new Vector2(0, 1);
+            tlRt.anchorMax = new Vector2(1, 1);
+            tlRt.pivot = new Vector2(0.5f, 1);
+            tlRt.sizeDelta = new Vector2(0, 1);
+            topLine.GetComponent<Image>().color = new Color(color.r, color.g, color.b, 0.3f);
+
+            // Label — stretch to fill button
+            int btnFontMax = Mathf.RoundToInt(Mathf.Max(22 * uiScale, 14));
+            var txt = AddTMP(go.transform, "Lbl", label, btnFontMax, FontStyles.Bold, color,
+                Vector2.zero, Vector2.zero);
+            var txtRt = txt.GetComponent<RectTransform>();
+            txtRt.anchorMin = Vector2.zero; txtRt.anchorMax = Vector2.one;
+            txtRt.offsetMin = new Vector2(8, 4); txtRt.offsetMax = new Vector2(-8, -4);
+            txt.enableAutoSizing = true;
+            txt.fontSizeMin = 10; txt.fontSizeMax = btnFontMax;
+            txt.characterSpacing = 6;
         }
 
-        static void BuildSecondaryButton(Transform parent, string label, Color color, System.Action onClick)
+        // ═══════════════════════════════════════════════════════════════
+        // SECONDARY BUTTON — Ghost-style outline
+        // ═══════════════════════════════════════════════════════════════
+        static void BuildSecondaryButton(Transform parent, string label, Color color, System.Action onClick, float uiScale = 1f)
         {
             var go = new GameObject(label + "Btn", typeof(RectTransform));
             go.transform.SetParent(parent, false);
-            BuildPremiumButton(go, label, new Color(color.r, color.g, color.b, 0.7f), onClick, 16);
+
+            var img = go.AddComponent<Image>();
+            img.color = new Color(color.r * 0.12f, color.g * 0.12f, color.b * 0.12f, 0.6f);
+
+            var btn = go.AddComponent<Button>();
+            var cb = btn.colors;
+            cb.normalColor = Color.white;
+            cb.highlightedColor = Color.white;
+            cb.pressedColor = Color.white;
+            cb.disabledColor = Color.white;
+            cb.fadeDuration = 0f;
+            btn.colors = cb;
+            if (onClick != null) btn.onClick.AddListener(() => onClick());
+
+            // Fluid animator
+            var fluid = go.AddComponent<FluidButtonAnimator>();
+            fluid.targetGraphic = img;
+            fluid.normalColor = new Color(color.r * 0.12f, color.g * 0.12f, color.b * 0.12f, 0.6f);
+            fluid.hoverColor = new Color(color.r * 0.2f, color.g * 0.2f, color.b * 0.2f, 0.75f);
+            fluid.pressColor = new Color(color.r * 0.08f, color.g * 0.08f, color.b * 0.08f, 0.8f);
+
+            var sa = go.AddComponent<ButtonScaleAnimator>();
+            sa.pressedScale = 0.95f;
+            sa.animationSpeed = 22f;
+            sa.useDefaultClickSound = true;
+
+            // Subtle outline
+            var secOl = go.AddComponent<Outline>();
+            secOl.effectColor = new Color(color.r, color.g, color.b, 0.25f);
+            secOl.effectDistance = new Vector2(1, -1);
+
+            // Bottom accent micro-line
+            var bottomLine = new GameObject("BottomLine", typeof(RectTransform), typeof(Image));
+            bottomLine.transform.SetParent(go.transform, false);
+            var btlRt = bottomLine.GetComponent<RectTransform>();
+            btlRt.anchorMin = new Vector2(0.1f, 0);
+            btlRt.anchorMax = new Vector2(0.9f, 0);
+            btlRt.pivot = new Vector2(0.5f, 0);
+            btlRt.sizeDelta = new Vector2(0, 1.5f);
+            bottomLine.GetComponent<Image>().color = new Color(color.r, color.g, color.b, 0.4f);
+
+            int secFontMax = Mathf.RoundToInt(Mathf.Max(14 * uiScale, 10));
+            var secTxt = AddTMP(go.transform, "Lbl", label, secFontMax, FontStyles.Bold,
+                new Color(color.r, color.g, color.b, 0.85f),
+                Vector2.zero, Vector2.zero);
+            var secTxtRt = secTxt.GetComponent<RectTransform>();
+            secTxtRt.anchorMin = Vector2.zero; secTxtRt.anchorMax = Vector2.one;
+            secTxtRt.offsetMin = new Vector2(4, 3); secTxtRt.offsetMax = new Vector2(-4, -3);
+            secTxt.enableAutoSizing = true;
+            secTxt.fontSizeMin = 8; secTxt.fontSizeMax = secFontMax;
         }
 
-        // ─── ACCENT LINE ────────────────────────────────────────────────
-        static GameObject CreateAccentLine(Transform parent, Vector2 anchorMin, Vector2 anchorMax, float height, Color color)
+        // ═══════════════════════════════════════════════════════════════
+        // ACCENT BAR — Top/bottom card edge
+        // ═══════════════════════════════════════════════════════════════
+        static void MakeAccentBar(Transform parent, bool top)
         {
-            var go = new GameObject("AccentLine", typeof(RectTransform), typeof(Image));
+            var go = new GameObject(top ? "TopAccent" : "BottomAccent", typeof(RectTransform), typeof(Image));
             go.transform.SetParent(parent, false);
             var rt = go.GetComponent<RectTransform>();
-            rt.anchorMin = anchorMin;
-            rt.anchorMax = anchorMax;
-            rt.pivot = new Vector2(0.5f, anchorMin.y > 0.5f ? 1f : 0f);
-            rt.sizeDelta = new Vector2(0, height);
+            if (top)
+            {
+                rt.anchorMin = new Vector2(0.05f, 1f);
+                rt.anchorMax = new Vector2(0.95f, 1f);
+                rt.pivot = new Vector2(0.5f, 1f);
+            }
+            else
+            {
+                rt.anchorMin = new Vector2(0.05f, 0f);
+                rt.anchorMax = new Vector2(0.95f, 0f);
+                rt.pivot = new Vector2(0.5f, 0f);
+            }
+            rt.sizeDelta = new Vector2(0, 2.5f);
             rt.anchoredPosition = Vector2.zero;
-            go.GetComponent<Image>().color = color;
 
-            // Glow behind it
-            var glow = new GameObject("Glow", typeof(RectTransform), typeof(Image));
+            float gradT = top ? 0f : 1f;
+            Color barColor = Color.Lerp(CardBorderA, CardBorderB, gradT);
+            go.GetComponent<Image>().color = new Color(barColor.r, barColor.g, barColor.b, 0.6f);
+
+            // Glow behind
+            var glow = new GameObject("BarGlow", typeof(RectTransform), typeof(Image));
             glow.transform.SetParent(go.transform, false);
             var glowRt = glow.GetComponent<RectTransform>();
             Stretch(glowRt);
-            glowRt.offsetMin = new Vector2(-4, -4);
-            glowRt.offsetMax = new Vector2(4, 4);
-            glow.GetComponent<Image>().color = new Color(color.r, color.g, color.b, 0.15f);
-
-            return go;
+            glowRt.offsetMin = new Vector2(-6, -4);
+            glowRt.offsetMax = new Vector2(6, 4);
+            glow.GetComponent<Image>().color = new Color(barColor.r, barColor.g, barColor.b, 0.12f);
+            glow.GetComponent<Image>().raycastTarget = false;
         }
 
-        // ─── PARTICLES ──────────────────────────────────────────────────
-        static void CreateParticles(Transform parent)
+        // ═══════════════════════════════════════════════════════════════
+        // AMBIENT MOTES — Floating particles
+        // ═══════════════════════════════════════════════════════════════
+        static void SpawnMotes(Transform parent)
         {
-            GameObject psGO = new GameObject("Particles", typeof(RectTransform), typeof(ParticleSystem));
-            psGO.transform.SetParent(parent, false);
-            RectTransform rt = psGO.GetComponent<RectTransform>();
-            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
-            rt.anchoredPosition = new Vector2(0, -200);
+            var container = MakeGO("Motes", parent);
+            Stretch(container.GetComponent<RectTransform>());
+            var fm = container.AddComponent<FloatingMotes>();
 
-            ParticleSystem ps = psGO.GetComponent<ParticleSystem>();
-            var main = ps.main;
-            main.startColor = new ParticleSystem.MinMaxGradient(
-                new Color(AccentCyan.r, AccentCyan.g, AccentCyan.b, 0.5f),
-                new Color(AccentGold.r, AccentGold.g, AccentGold.b, 0.4f));
-            main.startSize = new ParticleSystem.MinMaxCurve(0.02f, 0.06f);
-            main.startLifetime = 3f;
-            main.maxParticles = 200;
-            main.startSpeed = new ParticleSystem.MinMaxCurve(0.3f, 0.8f);
-            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            Color[] moteColors = { Accent1, Accent2, CardBorderA, new Color32(255, 200, 130, 255) };
 
-            var emission = ps.emission;
-            emission.rateOverTime = 25f;
+            for (int i = 0; i < 18; i++)
+            {
+                var dot = new GameObject("Mote", typeof(RectTransform), typeof(Image));
+                dot.transform.SetParent(container.transform, false);
+                var drt = dot.GetComponent<RectTransform>();
+                drt.anchorMin = drt.anchorMax = new Vector2(0.5f, 0.5f);
+                float sz = Random.Range(2f, 8f);
+                drt.sizeDelta = new Vector2(sz, sz);
+                drt.anchoredPosition = new Vector2(
+                    Random.Range(-Screen.width * 0.4f, Screen.width * 0.4f),
+                    Random.Range(-Screen.height * 0.4f, Screen.height * 0.4f));
 
-            var shape = ps.shape;
-            shape.shapeType = ParticleSystemShapeType.Cone;
-            shape.angle = 35f;
-            shape.radius = 2f;
+                var mImg = dot.GetComponent<Image>();
+                Color mCol = moteColors[i % moteColors.Length];
+                mImg.color = new Color(mCol.r, mCol.g, mCol.b, Random.Range(0.03f, 0.10f));
+                mImg.raycastTarget = false;
 
-            var colorOverLifetime = ps.colorOverLifetime;
-            colorOverLifetime.enabled = true;
-            Gradient grad = new Gradient();
-            grad.SetKeys(
-                new GradientColorKey[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
-                new GradientAlphaKey[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(0.6f, 0.3f), new GradientAlphaKey(0f, 1f) }
-            );
-            colorOverLifetime.color = grad;
+                fm.dots.Add(drt);
+                fm.imgs.Add(mImg);
+            }
         }
 
-        // ─── HELPERS ────────────────────────────────────────────────────
+        // ═══════════════════════════════════════════════════════════════
+        // BLUR CAPTURE
+        // ═══════════════════════════════════════════════════════════════
+        static Texture2D CaptureBlur()
+        {
+            Camera cam = Camera.main;
+            if (!cam) return null;
+            try
+            {
+                int fw = Screen.width, fh = Screen.height;
+                var full = RenderTexture.GetTemporary(fw, fh, 24);
+                var orig = cam.targetTexture;
+                cam.targetTexture = full;
+                cam.Render();
+                cam.targetTexture = orig;
+
+                var r1 = RenderTexture.GetTemporary(fw / 4, fh / 4, 0);
+                Graphics.Blit(full, r1); RenderTexture.ReleaseTemporary(full);
+                var r2 = RenderTexture.GetTemporary(fw / 8, fh / 8, 0);
+                Graphics.Blit(r1, r2); RenderTexture.ReleaseTemporary(r1);
+                var r3 = RenderTexture.GetTemporary(fw / 4, fh / 4, 0);
+                Graphics.Blit(r2, r3); RenderTexture.ReleaseTemporary(r2);
+
+                RenderTexture.active = r3;
+                var tex = new Texture2D(r3.width, r3.height, TextureFormat.RGB24, false);
+                tex.filterMode = FilterMode.Bilinear;
+                tex.wrapMode = TextureWrapMode.Clamp;
+                tex.ReadPixels(new Rect(0, 0, r3.width, r3.height), 0, 0);
+                tex.Apply();
+                RenderTexture.active = null;
+                RenderTexture.ReleaseTemporary(r3);
+                return tex;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning("[GameOver] Blur capture failed: " + e.Message);
+                return null;
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // HELPERS
+        // ═══════════════════════════════════════════════════════════════
 
         static void EnsureScreenshotShareManager(GameObject parent)
         {
@@ -554,19 +1067,30 @@ namespace Gazze.UI
             }
         }
 
-        static GameObject MakeStaggerChild(Transform parent, string name, Vector2 anchoredPos, Vector2 size)
+        static GameObject Stagger(Transform parent, string name, Vector2 pos, Vector2 size, float side)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(CanvasGroup));
             go.transform.SetParent(parent, false);
             var rt = go.GetComponent<RectTransform>();
             rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
             rt.sizeDelta = size;
-            rt.anchoredPosition = anchoredPos;
+            rt.anchoredPosition = pos;
 
             var origin = go.AddComponent<StaggerOrigin>();
-            origin.originY = anchoredPos.y;
+            origin.pos = pos;
+            origin.side = side;
 
             go.GetComponent<CanvasGroup>().alpha = 0f;
+            return go;
+        }
+
+        static GameObject MakeGO(string name, Transform parent, params System.Type[] comps)
+        {
+            var typeList = new System.Type[comps.Length + 1];
+            typeList[0] = typeof(RectTransform);
+            for (int i = 0; i < comps.Length; i++) typeList[i + 1] = comps[i];
+            var go = new GameObject(name, typeList);
+            go.transform.SetParent(parent, false);
             return go;
         }
 
@@ -587,6 +1111,24 @@ namespace Gazze.UI
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.color = color;
             tmp.raycastTarget = false;
+            tmp.overflowMode = TextOverflowModes.Truncate;
+
+            // Ensure Turkish Fallback
+            if (fallbackFont == null)
+                fallbackFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
+            
+            if (tmp.font != null && fallbackFont != null)
+            {
+                if (tmp.font.fallbackFontAssetTable == null) tmp.font.fallbackFontAssetTable = new List<TMP_FontAsset>();
+                if (!tmp.font.fallbackFontAssetTable.Contains(fallbackFont))
+                {
+                    tmp.font.fallbackFontAssetTable.Add(fallbackFont);
+#if UNITY_EDITOR
+                    UnityEditor.EditorUtility.SetDirty(tmp.font);
+#endif
+                }
+            }
+
             return tmp;
         }
 
@@ -630,7 +1172,7 @@ namespace Gazze.UI
             #else
             es.AddComponent<StandaloneInputModule>();
             #endif
-            Object.DontDestroyOnLoad(es);
+            if (Application.isPlaying) Object.DontDestroyOnLoad(es);
         }
     }
 }

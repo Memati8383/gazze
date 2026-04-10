@@ -1,6 +1,11 @@
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// Üzerindeki butonu duraklatma menüsüne bağlayan yardımcı bileşen.
+/// Btn_ReturnMenu butonuna eklenir — artık direkt ana menüye gitmek yerine
+/// duraklatma panelini açar/kapatır.
+/// </summary>
 public class MenuButtonLinker : MonoBehaviour
 {
     void Start()
@@ -14,18 +19,9 @@ public class MenuButtonLinker : MonoBehaviour
 
     void OnClicked()
     {
-        MenuNavigator nav = Object.FindFirstObjectByType<MenuNavigator>();
-        if (nav != null)
-        {
-            nav.LoadMainMenu();
-        }
-        else
-        {
-            // Eğer sahnedeki navigatör bulunamazsa geçici bir tane oluştur veya direkt yükle
-            if (LoadingManager.Instance != null)
-                LoadingManager.Instance.LoadScene("MainMenu");
-            else
-                UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
-        }
+        if (Settings.AudioManager.Instance != null)
+            Settings.AudioManager.Instance.PlayClickSound();
+
+        Gazze.UI.PauseMenuBuilder.Toggle();
     }
 }

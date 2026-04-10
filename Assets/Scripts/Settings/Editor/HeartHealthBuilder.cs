@@ -7,6 +7,9 @@ using Gazze.UI;
 
 namespace Settings.Editor
 {
+    /// <summary>
+    /// Dayaniklilik slider'ini kalp tabanli can gostergesine donusturen editor aracidir.
+    /// </summary>
     public class HeartHealthBuilder
     {
         [MenuItem("Tools/Gazze/Upgrade Health UI to Hearts")]

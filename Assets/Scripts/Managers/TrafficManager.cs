@@ -1,11 +1,3 @@
-/**
- * @file TrafficManager.cs
- * @author Unity MCP Assistant
- * @date 2026-02-28
- * @last_update 2026-02-28
- * @description Trafikteki engellerin, araçların ve toplanabilir objelerin (yardım kolileri) havuzlama (pooling) sistemiyle yönetimini sağlar.
- */
-
 using UnityEngine;
 using System.Collections.Generic;
 
@@ -15,56 +7,38 @@ using System.Collections.Generic;
 public class TrafficManager : MonoBehaviour
 {
     [Header("Prefab Ayarları")]
-    /// <summary> Engel olarak kullanılacak araç veya enkaz prefabları. </summary>
-    [Tooltip("Engel olarak kullanılacak araç veya enkaz prefabları.")]
+    [Tooltip("Trafikte engel olarak (karşı araçlar, bozuk araçlar vb.) kullanılacak prefablar.")]
     public GameObject[] trafficCarPrefabs;
     
-    /// <summary> Toplanacak yardım kolisi (coin) prefabı. </summary>
-    [Tooltip("Toplanacak yardım kolisi prefabı.")]
-    public GameObject coinPrefab;
-    
     [Header("Oluşturma (Spawning) Ayarları")]
-    /// <summary> Engel havuzunda (pool) tutulacak maksimum nesne sayısı. </summary>
-    [Tooltip("Pool'da tutulacak maksimum engel sayısı.")]
-    public int poolSize = 30; // 15'ten 30'a çıkarıldı
+    [Tooltip("Nesne havuzunda (object pool) tutulacak maksimum araç sayısı.")]
+    public int poolSize = 30;
     
-    /// <summary> Yardım kolisi havuzunda tutulacak maksimum nesne sayısı. </summary>
-    [Tooltip("Pool'da tutulacak maksimum koli sayısı.")]
-    public int coinPoolSize = 40; // 20'den 40'a çıkarıldı
+    [Tooltip("Yeni araçların oyuncunun ne kadar önünde (Z ekseni) belireceği.")]
+    public float spawnZ = 300f;
     
-    /// <summary> Nesnelerin oyuncunun önünde oluşacağı uzaklık (Z ekseni). </summary>
-    [Tooltip("Nesnelerin sahnede oluşacağı uzak mesafe (Z ekseni).")]
-    public float spawnZ = 300f; // 250'den 300'e çıkarıldı
-    
-    /// <summary> Nesnelerin oyuncunun arkasında yok edileceği uzaklık (Z ekseni). </summary>
-    [Tooltip("Nesnelerin sahneden yok edileceği yakın mesafe (Z ekseni).")]
+    [Tooltip("Yoldan çıkan veya geride kalan araçların ne kadar arkada yok edileceği.")]
     public float despawnZ = -50f;
     
-    /// <summary> Şeritlerdeki araçlar arasında bırakılacak minimum güvenli mesafe. </summary>
-    [Tooltip("Art arda oluşan araçlar arasındaki minimum güvenli mesafe.")]
-    public float minDistanceBetweenCars = 15f; // 25'ten 15'e düşürüldü
+    [Tooltip("Aynı şeritte art arda çıkan iki araç arasındaki minimum güvenli mesafe.")]
+    public float minDistanceBetweenCars = 15f;
 
-    /// <summary> Trafik araçlarının doğru yöne bakması için rotasyon. </summary>
-    [Tooltip("Trafik araçlarının doğru yöne bakması için rotasyon (FBX modellerine göre ayarlanmalıdır).")]
+    [Tooltip("Trafik araçlarının Unity sahnemize uygun şekilde (yola paralel) durması için rotasyon düzeltmesi.")]
     public Vector3 trafficCarRotation = new(-90f, 90f, 0f);
 
-    /// <summary> Aracın hareket edebileceği şeritlerin X koordinatları (Sol ve Sağ). </summary>
-    private float[] lanes = { -1.5f, 1.5f };
+    /// <summary> Yolun sahip olduğu şeritlerin merkez X koordinatları. </summary>
+    private float[] lanes = { -2.25f, 2.25f };
     
-    /// <summary> Engel (araç/enkaz) nesne havuzu. </summary>
+    /// <summary> Sahne donmalarını engellemek için önceden oluşturulan araç listesi (Pooling). </summary>
     private List<GameObject> pool = new List<GameObject>();
     
-    /// <summary> Yardım kolisi nesne havuzu. </summary>
-    private List<GameObject> coinPool = new List<GameObject>();
-
-    private MaterialPropertyBlock coinPropBlock;
-    private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
-    private static readonly int ColorId = Shader.PropertyToID("_Color");
 
     private void Awake()
     {
-        coinPropBlock = new MaterialPropertyBlock();
     }
+
+    private float spawnDistanceCounter = 0f;
+    private float nextSpawnDistance = 50f;
 
     private void Start()
     {
@@ -78,7 +52,7 @@ public class TrafficManager : MonoBehaviour
             }
         }
 
-        // 2. Engel Havuzunu (Car Pool) Oluştur: Performans için nesneleri önceden belleğe yükler.
+        // 2. Engel Havuzunu (Car Pool) Oluştur
         if (trafficCarPrefabs != null && trafficCarPrefabs.Length > 0)
         {
             for (int i = 0; i < poolSize; i++)
@@ -86,52 +60,53 @@ public class TrafficManager : MonoBehaviour
                 GameObject prefab = trafficCarPrefabs[Random.Range(0, trafficCarPrefabs.Length)];
                 GameObject car = Instantiate(prefab);
                 car.SetActive(false);
-                car.tag = "TrafficCar"; // Tag'in doğru olduğundan emin ol
-                
-                // BoxCollider ve Rigidbody kontrolü
-                 BoxCollider bc = car.GetComponent<BoxCollider>();
-                 if (bc == null) bc = car.AddComponent<BoxCollider>();
-                 bc.isTrigger = true; // Player OnTrigger kullanıyor
+                car.tag = "TrafficCar";
 
-                 if (car.GetComponent<Rigidbody>() == null)
-                 {
-                     Rigidbody rb = car.AddComponent<Rigidbody>();
-                     rb.useGravity = false;
-                     rb.isKinematic = true; 
-                 }
+                BoxCollider bc = car.GetComponent<BoxCollider>();
+                if (bc == null) bc = car.AddComponent<BoxCollider>();
+                bc.isTrigger = true;
 
-                  // Collider'ı modele tam oturacak şekilde (game-pose) ayarla
-                  car.transform.rotation = Quaternion.Euler(trafficCarRotation);
-                  AdjustColliderToFitModel(car, bc, 0.7f);
+                if (car.GetComponent<Rigidbody>() == null)
+                {
+                    Rigidbody rb = car.AddComponent<Rigidbody>();
+                    rb.useGravity = false;
+                    rb.isKinematic = true;
+                }
 
-                // Rigidbody ve Collider ayarları
+                car.transform.rotation = Quaternion.Euler(trafficCarRotation);
+                AdjustColliderToFitModel(car, bc, 0.7f);
                 pool.Add(car);
             }
         }
-
-        // 2. Yardım Kolisi Havuzunu (Aid Box Pool) Oluştur
-        if (coinPrefab != null)
-        {
-            for (int i = 0; i < coinPoolSize; i++)
-            {
-                GameObject coin = Instantiate(coinPrefab);
-                SetupAsSimpleColoredCube(coin); // Koli görünümü için temel renk ve şekil ataması.
-                coin.SetActive(false);
-                coinPool.Add(coin);
-            }
-        }
-
-        // Nesne üretim döngülerini başlat - Sıklık 2 kat artırıldı
-        InvokeRepeating(nameof(SpawnCar), 1f, 0.6f);
-        InvokeRepeating(nameof(SpawnCoin), 1.5f, 0.9f);
+        
+        // Mesafe hesaplaması için başlangıç değeri
+        nextSpawnDistance = 50f;
     }
 
     private void Update()
     {
-        // Oyun durmuşsa (Pause/GameOver) nesne hareketlerini durdur.
         if (Time.timeScale == 0) return;
+
+        // Geri sayım bitmeden trafik oluşturma
+        if (Gazze.UI.CountdownManager.Instance != null && !Gazze.UI.CountdownManager.Instance.IsGameStarted) return;
         
-        MoveObjects();
+        float speed = PlayerController.Instance != null ? PlayerController.Instance.currentWorldSpeed : 20f;
+        
+        // Mesafe bazlı araç spawn logic
+        spawnDistanceCounter += speed * Time.deltaTime;
+        if (spawnDistanceCounter >= nextSpawnDistance)
+        {
+            SpawnCar();
+            spawnDistanceCounter = 0f;
+            
+            // Zorluk Dengesi: Hız arttıkça araçlar arasındaki mesafeyi azalt (Yoğunluğu artır)
+            // Hız 20 iken: 80 metrede bir araç
+            // Hız 100 iken: 35 metrede bir araç
+            float t = Mathf.InverseLerp(20f, 100f, speed);
+            nextSpawnDistance = Mathf.Lerp(80f, 35f, t);
+        }
+
+        MoveTrafficCars();
     }
 
     /// <summary>
@@ -150,69 +125,112 @@ public class TrafficManager : MonoBehaviour
         
         if (car != null)
         {
-            Vector3 targetPos = new(randomLane, 1.0f, spawnZ);
-            Quaternion targetRot = Quaternion.Euler(trafficCarRotation.x, trafficCarRotation.y - 90f, trafficCarRotation.z);
-            
-            car.transform.position = new(randomLane, 0.25f, spawnZ);
-            car.transform.rotation = Quaternion.Euler(trafficCarRotation);
-            car.SetActive(true);
+            if (PlayerController.Instance != null)
+                PlayerController.Instance.ResetNearMiss(car.GetInstanceID());
 
-            StartCoroutine(AnimateEntrance(car, targetPos, targetRot));
+            Vector3 targetPosition = new Vector3(randomLane, 0.85f, spawnZ);
+            Quaternion targetRotation = Quaternion.Euler(trafficCarRotation.x, trafficCarRotation.y - 90f, trafficCarRotation.z);
+            
+            // Başlangıç: Araç direkt yerde ama dikey ölçeği 0 (Zeminden yükselme efekti)
+            car.transform.position = targetPosition;
+            car.transform.rotation = targetRotation;
+            car.transform.localScale = new Vector3(1f, 0f, 1f); // X ve Z tam, Y sıfır
+            
+            ApplyCurvedShaderToCar(car);
+            car.SetActive(true);
+            
+            // 'Digital Extrusion' / 'Zeminden Yükselme' efektini başlat
+            StartCoroutine(PerformExtrusionSpawn(car));
         }
     }
 
     /// <summary>
-    /// Nesneyi belirlenen pozisyon ve rotasyona yumuşak bir şekilde taşır ve döndürür.
+    /// Trafik araçlarının zeminden 'dikey olarak yükselerek' belirmesini sağlar (Premium UX).
     /// </summary>
-    private System.Collections.IEnumerator AnimateEntrance(GameObject obj, Vector3 targetPos, Quaternion targetRot)
+    private System.Collections.IEnumerator PerformExtrusionSpawn(GameObject car)
     {
-        float duration = 0.8f; // Animasyon süresi
+        float duration = 0.35f; // Daha hızlı ve vurucu (snappy)
         float elapsed = 0f;
-        Vector3 startPos = obj.transform.position;
-        Quaternion startRot = obj.transform.rotation;
-
+        
         while (elapsed < duration)
         {
-            if (obj == null || !obj.activeInHierarchy) yield break;
-
+            if (car == null || !car.activeInHierarchy) yield break;
+            
             elapsed += Time.deltaTime;
             float t = elapsed / duration;
-            
-            // SmoothStep (Ease In/Out) eğrisi kullanarak daha doğal bir geçiş sağlarız
-            t = t * t * (3f - 2f * t);
 
-            // Pozisyon ve rotasyonu eş zamanlı olarak güncelle
-            obj.transform.position = Vector3.Lerp(startPos, targetPos, t);
-            obj.transform.rotation = Quaternion.Slerp(startRot, targetRot, t);
+            // 'Elastic Out' hissi için (Hızlı yükselip sonda yavaşlama)
+            float growth = 1f - Mathf.Pow(1f - t, 4f);
+            
+            // Sadece Y ölçeğini güncelliyoruz (X ve Z sabit kalsın ki 'genişleme' değil 'yükselme' olsun)
+            car.transform.localScale = new Vector3(1f, growth, 1f);
 
             yield return null;
         }
 
-        // Son değerleri netleştir
-        if (obj != null)
+        if (car != null) car.transform.localScale = Vector3.one;
+    }
+
+    /// <summary>
+    /// Aracın tüm parçalarına Curved World shader'ını uygular.
+    /// Bu, build'deki 'pink shader' hatasını çözer ve araçların yolla beraber eğilmesini sağlar.
+    /// </summary>
+    private void ApplyCurvedShaderToCar(GameObject car)
+    {
+        Shader vehicleShader = Shader.Find("Custom/VehicleShader_URP");
+        if (vehicleShader == null) vehicleShader = Shader.Find("Custom/CurvedWorld_URP"); // Fallback
+        if (vehicleShader == null) return;
+
+        MaterialPropertyBlock carPropBlock = new MaterialPropertyBlock();
+
+        // Her araç için farklı kir miktarı (Bazıları daha temiz, bazıları çok kirli)
+        float randomDirt = Random.Range(0.15f, 0.65f);
+        float randomWear = Random.Range(0.2f, 0.8f);
+
+        foreach (Renderer r in car.GetComponentsInChildren<Renderer>())
         {
-            obj.transform.position = targetPos;
-            obj.transform.rotation = targetRot;
+            Material[] mats = r.sharedMaterials;
+            bool changed = false;
+            for (int i = 0; i < mats.Length; i++)
+            {
+                if (mats[i] == null) continue;
+                if (mats[i].shader != vehicleShader)
+                {
+                    // Mevcut doku ve renkleri koruyarak shader'ı değiştir
+                    Texture mainTex = null;
+                    if (mats[i].HasProperty("_BaseMap")) mainTex = mats[i].GetTexture("_BaseMap");
+                    else if (mats[i].HasProperty("_MainTex")) mainTex = mats[i].mainTexture;
+
+                    Color mainColor = Color.white;
+                    if (mats[i].HasProperty("_BaseColor")) mainColor = mats[i].GetColor("_BaseColor");
+                    else if (mats[i].HasProperty("_Color")) mainColor = mats[i].color;
+
+                    mats[i] = new Material(mats[i]);
+                    mats[i].shader = vehicleShader;
+                    if (mainTex != null) mats[i].SetTexture("_BaseMap", mainTex);
+                    mats[i].SetColor("_BaseColor", mainColor);
+                    changed = true;
+                }
+            }
+            if (changed) r.sharedMaterials = mats;
+
+            // PropertyBlock ile parametreleri sızdırmadan set et
+            r.GetPropertyBlock(carPropBlock);
+            carPropBlock.SetFloat("_DirtAmount", randomDirt);
+            carPropBlock.SetFloat("_WearStrength", randomWear);
+            carPropBlock.SetColor("_DirtColor", new Color(0.25f, 0.15f, 0.1f, 1f));
+            carPropBlock.SetFloat("_Curvature", 0.002f);
+            carPropBlock.SetFloat("_CurvatureH", -0.0015f);
+            carPropBlock.SetFloat("_HorizonOffset", 10.0f);
+            r.SetPropertyBlock(carPropBlock);
         }
     }
+
 
     /// <summary>
     /// Uygun bir şeritte yardım kolisi aktif eder.
     /// </summary>
-    private void SpawnCoin()
-    {
-        if (Time.timeScale == 0) return; // Oyun durmuşsa spawn yapma
-
-        float randomLane = lanes[Random.Range(0, lanes.Length)];
-        if (IsLaneBlocked(randomLane)) return;
-
-        GameObject coin = GetInactive(coinPool, coinPrefab);
-        if (coin != null)
-        {
-            coin.transform.position = new(randomLane, 0.8f, spawnZ);
-            coin.SetActive(true);
-        }
-    }
+// SpawnCoin kaldırıldı – artık Gazze.Collectibles.CoinSpawner yönetiyor.
 
     /// <summary>
     /// Nesne havuzundaki pasif (kullanılmayan) bir objeyi döner. Eğer havuz boşsa yeni bir tane oluşturur.
@@ -220,50 +238,36 @@ public class TrafficManager : MonoBehaviour
     /// <param name="objectList">Aranacak havuz listesi.</param>
     /// <param name="prefab">Havuz boşsa instantiate edilecek prefab.</param>
     /// <returns>Kullanıma hazır pasif obje.</returns>
-    private GameObject GetInactive(List<GameObject> objectList, GameObject prefab)
+private GameObject GetInactive(List<GameObject> objectList, GameObject prefab)
     {
         for (int i = objectList.Count - 1; i >= 0; i--)
         {
-            if (objectList[i] == null)
-            {
-                objectList.RemoveAt(i);
-                continue;
-            }
+            if (objectList[i] == null) { objectList.RemoveAt(i); continue; }
             if (!objectList[i].activeInHierarchy) return objectList[i];
         }
 
-        // Eğer buraya ulaşıldıysa havuzda boş yer kalmamıştır, yeni bir tane oluştur (Dinamik Genişleme)
+        // Havuz yetersizse dinamik olarak yeni trafik araci olustur
         if (prefab != null)
         {
-            Debug.LogWarning($"TrafficManager: Havuz yetersiz! ({prefab.name}) için yeni nesne oluşturuluyor. Başlangıç havuz boyutunu (poolSize) artırmayı düşünün.");
+            Debug.LogWarning($"TrafficManager: Havuz yetersiz! ({prefab.name}) icin yeni nesne olusturuluyor.");
             GameObject newObj = Instantiate(prefab);
             newObj.SetActive(false);
-            
-            // Prefab tipine göre uygun setup'ı yap
-            if (prefab == coinPrefab)
-            {
-                SetupAsSimpleColoredCube(newObj);
-            }
-            else
-            {
-                newObj.tag = "TrafficCar";
-                
-                BoxCollider bc = newObj.GetComponent<BoxCollider>();
-                if (bc == null) bc = newObj.AddComponent<BoxCollider>();
-                bc.isTrigger = true;
+            newObj.tag = "TrafficCar";
 
-                if (newObj.GetComponent<Rigidbody>() == null)
-                {
-                    Rigidbody rb = newObj.AddComponent<Rigidbody>();
-                    rb.useGravity = false;
-                    rb.isKinematic = true;
-                }
+            BoxCollider bc = newObj.GetComponent<BoxCollider>();
+            if (bc == null) bc = newObj.AddComponent<BoxCollider>();
+            bc.isTrigger = true;
 
-                // Collider'ı modele tam oturacak şekilde (game-pose) ayarla
-                newObj.transform.rotation = Quaternion.Euler(trafficCarRotation);
-                AdjustColliderToFitModel(newObj, bc, 0.7f);
+            if (newObj.GetComponent<Rigidbody>() == null)
+            {
+                Rigidbody rb = newObj.AddComponent<Rigidbody>();
+                rb.useGravity  = false;
+                rb.isKinematic = true;
             }
-            
+
+            newObj.transform.rotation = Quaternion.Euler(trafficCarRotation);
+            AdjustColliderToFitModel(newObj, bc, 0.7f);
+
             objectList.Add(newObj);
             return newObj;
         }
@@ -291,7 +295,8 @@ public class TrafficManager : MonoBehaviour
         {
             // World space bounds'u root'un local space'ine çevir
             bc.center = root.transform.InverseTransformPoint(b.center);
-            bc.size = root.transform.InverseTransformVector(b.size) * multiplier;
+            Vector3 localSize = root.transform.InverseTransformVector(b.size);
+            bc.size = new Vector3(Mathf.Abs(localSize.x), Mathf.Abs(localSize.y), Mathf.Abs(localSize.z)) * multiplier;
             
             // Pozisyon düzenlemeleri: Yükseklik tabana, merkez biraz öne (Forward bias)
             Vector3 center = bc.center;
@@ -302,27 +307,32 @@ public class TrafficManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Tüm aktif trafik nesnelerini oyuncunun hızına göre geriye taşır ve menzil dışındakileri deaktif eder.
+    /// Sadece trafik araçlarını hareket ettirir. Coin hareketi artık CoinSpawner'da.
     /// </summary>
-    private void MoveObjects()
+    private void MoveTrafficCars()
     {
         float speed = PlayerController.Instance != null ? PlayerController.Instance.currentWorldSpeed : 20f;
-        
-        // Trafik araçlarını hareket ettir ve yeni çarpışma sistemine kaydet
+
         for (int i = pool.Count - 1; i >= 0; i--)
         {
             GameObject car = pool[i];
-            if (car == null)
-            {
-                pool.RemoveAt(i);
-                continue;
-            }
+            if (car == null) { pool.RemoveAt(i); continue; }
 
             if (car.activeInHierarchy)
             {
+                // ── Fling Check ──
+                // Eğer araç bir güç (ShockWave/Juggernaut) ile fırlatılmışsa (kinematic değilse),
+                // normal trafik akışından çıkar ve fizik motoruna bırak.
+                Rigidbody rb = car.GetComponent<Rigidbody>();
+                if (rb != null && !rb.isKinematic) 
+                {
+                    // Deaktivasyon kontrolünü yine de yap (Z ekseninde çok arkaya düştüyse)
+                    if (car.transform.position.z < despawnZ - 20f) car.SetActive(false);
+                    continue; 
+                }
+
                 car.transform.Translate(Vector3.back * speed * Time.deltaTime, Space.World);
-                
-                // Çarpışma sistemine kayıt (ID: 1+ = Traffic)
+
                 if (Gazze.Collision.HighPerformanceCollisionManager.Instance != null)
                 {
                     BoxCollider bc = car.GetComponent<BoxCollider>();
@@ -333,28 +343,11 @@ public class TrafficManager : MonoBehaviour
                         extents = bc.bounds.extents,
                         rotation = car.transform.rotation,
                         type = Gazze.Collision.HighPerformanceCollisionManager.CollisionType.AABB,
-                        layer = 1 // Traffic Layer
+                        layer = 1
                     });
                 }
 
                 if (car.transform.position.z < despawnZ) car.SetActive(false);
-            }
-        }
-
-        // Kolileri hareket ettir
-        for (int i = coinPool.Count - 1; i >= 0; i--)
-        {
-            GameObject coin = coinPool[i];
-            if (coin == null)
-            {
-                coinPool.RemoveAt(i);
-                continue;
-            }
-
-            if (coin.activeInHierarchy)
-            {
-                coin.transform.Translate(Vector3.back * speed * Time.deltaTime, Space.World);
-                if (coin.transform.position.z < despawnZ) coin.SetActive(false);
             }
         }
     }
@@ -387,20 +380,49 @@ public class TrafficManager : MonoBehaviour
     /// <summary>
     /// Basit yardım kolisi görünümü (Haki renkli küp) oluşturur.
     /// </summary>
-    private void SetupAsSimpleColoredCube(GameObject coin)
+    private void OnDrawGizmos()
     {
-        MeshRenderer mr = coin.GetComponent<MeshRenderer>();
-        if (mr != null)
+        // 1. Spawn ve Despawn hatlarını çiz (Sadece Seçiliyken)
+        Gizmos.color = Color.red;
+        Gizmos.DrawLine(new Vector3(-10, 0, spawnZ), new Vector3(10, 0, spawnZ));
+        Gizmos.DrawLine(new Vector3(-10, 0, despawnZ), new Vector3(10, 0, despawnZ));
+#if UNITY_EDITOR
+        UnityEditor.Handles.Label(new Vector3(0, 5, spawnZ), "TRAFFIC SPAWN Z");
+        UnityEditor.Handles.Label(new Vector3(0, 5, despawnZ), "TRAFFIC DESPAWN Z");
+#endif
+        
+        // 2. Şeritleri ve Güvenli Mesafe Sınırını Çiz
+        Gizmos.color = new Color(1f, 0.5f, 0f, 0.5f); // Turuncu, yarı saydam
+        foreach (float lx in lanes)
         {
-            Color coinColor = new(0.4f, 0.4f, 0.2f); // Haki/Askeri yeşil tonu.
-            mr.GetPropertyBlock(coinPropBlock);
+            // Şerit hattı
+            Gizmos.DrawLine(new Vector3(lx, 0, despawnZ), new Vector3(lx, 0, spawnZ));
             
-            if (mr.sharedMaterial.HasProperty("_BaseColor"))
-                coinPropBlock.SetColor(BaseColorId, coinColor);
-            else
-                coinPropBlock.SetColor(ColorId, coinColor);
-                
-            mr.SetPropertyBlock(coinPropBlock);
+            // Spawn anında engel kontrol alanı (MinDistance)
+            Gizmos.DrawWireCube(new Vector3(lx, 0.5f, spawnZ - minDistanceBetweenCars * 0.5f), 
+                               new Vector3(1.5f, 1f, minDistanceBetweenCars));
+#if UNITY_EDITOR
+            UnityEditor.Handles.Label(new Vector3(lx, 2, spawnZ - minDistanceBetweenCars), "LANE: " + lx);
+#endif
+        }
+
+        // 3. Aktif araçların collider sınırlarını göster (Sadece Oyun Çalışırken)
+        if (Application.isPlaying)
+        {
+            Gizmos.color = Color.yellow;
+            foreach (var car in pool)
+            {
+                if (car != null && car.activeInHierarchy)
+                {
+                    BoxCollider bc = car.GetComponent<BoxCollider>();
+                    if (bc != null)
+                    {
+                         Gizmos.matrix = car.transform.localToWorldMatrix;
+                         Gizmos.DrawWireCube(bc.center, bc.size);
+                    }
+                }
+            }
+            Gizmos.matrix = Matrix4x4.identity;
         }
     }
 }

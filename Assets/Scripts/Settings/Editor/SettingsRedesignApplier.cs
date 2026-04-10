@@ -8,6 +8,9 @@ using Settings;
 
 namespace Settings.Editor
 {
+    /// <summary>
+    /// Sahneye modern ayarlar panelini olusturur ve gerekli bilesenleri baglar.
+    /// </summary>
     public class SettingsRedesignApplier
     {
         [MenuItem("Tools/Gazze/Create Modern Settings")]

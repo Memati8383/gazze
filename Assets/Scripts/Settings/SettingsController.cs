@@ -1,11 +1,3 @@
-/**
- * @file SettingsController.cs
- * @author Unity MCP Assistant
- * @date 2026-02-28
- * @last_update 2026-02-28
- * @description Model ve View arasındaki iletişimi yöneten, ayarların oyun dünyasına uygulanmasını sağlayan Controller sınıfıdır.
- */
-
 using UnityEngine;
 
 namespace Settings
@@ -17,6 +9,7 @@ namespace Settings
     {
         [Header("Görünüm Referansı")]
         /// <summary> Ayarlar ekranının View bileşeni. </summary>
+        [Tooltip("UI olaylarini dinlemek icin SettingsView referansi.")]
         public SettingsView view;
         
         private SettingsModel model;
@@ -47,21 +40,52 @@ namespace Settings
         /// <summary>
         /// View bileşenini model verileriyle senkronize eder ve olayları bağlar.
         /// </summary>
-        private void InitializeView()
+        public void InitializeView()
         {
-            // Model verilerini UI'ya aktar
-            view.UpdateUI(model.MusicVolume, model.MusicEnabled, model.SFXVolume, model.SFXEnabled, model.LanguageIndex, model.HapticEnabled);
+            if (view == null) view = GetComponent<SettingsView>();
+            if (view == null) return;
+            if (model == null) model = new SettingsModel(); 
 
-            // View üzerindeki olayları Controller metodlarına bağla
+            // Model verilerini UI'ya aktar
+            view.UpdateUI(model.MusicVolume, model.MusicEnabled, model.SFXVolume, model.SFXEnabled, model.LanguageIndex, model.HapticEnabled, model.ControlMethod, model.AccelerationMode, model.ControlSensitivity);
+
+            // View üzerindeki olayları Controller metodlarına bağla (Mükerrer önleme için önce çıkar)
+            view.OnMusicVolumeChanged -= HandleMusicVolumeChanged;
             view.OnMusicVolumeChanged += HandleMusicVolumeChanged;
-            view.OnMusicToggleChanged += HandleMusicToggleChanged;
-            view.OnSFXVolumeChanged += HandleSFXVolumeChanged;
-            view.OnSFXToggleChanged += HandleSFXToggleChanged;
-            view.OnLanguageChanged += HandleLanguageChanged;
-            view.OnHapticToggleChanged += HandleHapticToggleChanged;
-            view.OnBackButtonClicked += HandleBackButtonClicked;
-            view.OnResetProgressClicked += HandleResetProgressClicked;
             
+            view.OnMusicToggleChanged -= HandleMusicToggleChanged;
+            view.OnMusicToggleChanged += HandleMusicToggleChanged;
+            
+            view.OnSFXVolumeChanged -= HandleSFXVolumeChanged;
+            view.OnSFXVolumeChanged += HandleSFXVolumeChanged;
+            
+            view.OnSFXToggleChanged -= HandleSFXToggleChanged;
+            view.OnSFXToggleChanged += HandleSFXToggleChanged;
+            
+            view.OnLanguageChanged -= HandleLanguageChanged;
+            view.OnLanguageChanged += HandleLanguageChanged;
+            
+            view.OnHapticToggleChanged -= HandleHapticToggleChanged;
+            view.OnHapticToggleChanged += HandleHapticToggleChanged;
+            
+            view.OnBackButtonClicked -= HandleBackButtonClicked;
+            view.OnBackButtonClicked += HandleBackButtonClicked;
+            
+            view.OnResetProgressClicked -= HandleResetProgressClicked;
+            view.OnResetProgressClicked += HandleResetProgressClicked;
+
+            view.OnControlMethodChanged -= HandleControlMethodChanged;
+            view.OnControlMethodChanged += HandleControlMethodChanged;
+
+            view.OnAccelerationModeChanged -= HandleAccelerationModeChanged;
+            view.OnAccelerationModeChanged += HandleAccelerationModeChanged;
+
+            view.OnControlSensitivityChanged -= HandleControlSensitivityChanged;
+            view.OnControlSensitivityChanged += HandleControlSensitivityChanged;
+
+            view.OnCalibrateClicked -= HandleCalibrateClicked;
+            view.OnCalibrateClicked += HandleCalibrateClicked;
+
             // Başlangıç ayarlarını uygula
             ApplyAllSettings();
         }
@@ -114,6 +138,33 @@ namespace Settings
             if (mainMenu != null) mainMenu.ShowMainOptions();
         }
 
+        private void HandleControlMethodChanged(int index)
+        {
+            model.SetControlMethod(index);
+            ApplyControlSettings();
+        }
+
+        private void HandleAccelerationModeChanged(int index)
+        {
+            model.SetAccelerationMode(index);
+            ApplyControlSettings();
+        }
+
+        private void HandleControlSensitivityChanged(float val)
+        {
+            model.SetControlSensitivity(val);
+            ApplyControlSettings();
+        }
+
+        private void HandleCalibrateClicked()
+        {
+            // İvmeölçer kalibrasyonu: Mevcut yerçekimi/ivme değerini sıfır noktası olarak kaydet
+            // Genelde telefonun X (yan yatış) değeri bizim için önemli.
+            float currentX = Input.acceleration.x;
+            model.SetAccelerometerOffset(currentX);
+            Debug.Log($"İvmeölçer kalibre edildi. Yeni sıfır noktası: {currentX}");
+        }
+
         /// <summary>
         /// Tüm ses ve dil ayarlarını oyun sistemlerine uygular.
         /// </summary>
@@ -121,6 +172,16 @@ namespace Settings
         {
             ApplyAudioSettings();
             ApplyLanguageSettings();
+            ApplyControlSettings();
+        }
+
+        private void ApplyControlSettings()
+        {
+            if (PlayerController.Instance != null)
+            {
+                PlayerController.Instance.LoadControlSettings();
+                PlayerController.Instance.UpdateControlUIVisibility();
+            }
         }
 
         private void ApplyAudioSettings()
@@ -155,6 +216,10 @@ namespace Settings
                 view.OnLanguageChanged -= HandleLanguageChanged;
                 view.OnHapticToggleChanged -= HandleHapticToggleChanged;
                 view.OnBackButtonClicked -= HandleBackButtonClicked;
+                view.OnControlMethodChanged -= HandleControlMethodChanged;
+                view.OnAccelerationModeChanged -= HandleAccelerationModeChanged;
+                view.OnControlSensitivityChanged -= HandleControlSensitivityChanged;
+                view.OnCalibrateClicked -= HandleCalibrateClicked;
             }
         }
     }

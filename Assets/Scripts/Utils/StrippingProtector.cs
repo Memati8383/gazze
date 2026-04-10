@@ -13,6 +13,9 @@ namespace Gazze
     /// </summary>
     public class StrippingProtector : MonoBehaviour
     {
+        /// <summary>
+        /// Linker tarafindan korunmasi gereken tipleri olusturarak strip edilmesini engeller.
+        /// </summary>
         [Preserve]
         public void PreserveTypes()
         {

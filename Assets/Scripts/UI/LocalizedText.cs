@@ -5,8 +5,13 @@ namespace Gazze.UI
 {
     [ExecuteAlways]
     [RequireComponent(typeof(TextMeshProUGUI))]
+    /// <summary>
+    /// TextMeshProUGUI metnini LocalizationManager uzerinden secilen dile gore gunceller.
+    /// </summary>
     public class LocalizedText : MonoBehaviour
     {
+        [Header("Localization")]
+        [Tooltip("LocalizationManager icindeki ceviri anahtari.")]
         [SerializeField] private string localizationKey;
 
         private TextMeshProUGUI textComponent;

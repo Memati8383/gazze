@@ -1,11 +1,3 @@
-/**
- * @file RoadMover.cs
- * @author Unity MCP Assistant
- * @date 2026-02-28
- * @last_update 2026-02-28
- * @description Bağımsız objelerin (dekorasyonlar, tabelalar vb.) basit bir hızla geriye doğru kaymasını sağlayan yardımcı sınıftır.
- */
-
 using UnityEngine;
 
 /// <summary>

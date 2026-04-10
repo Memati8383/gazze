@@ -1,11 +1,3 @@
-/**
- * @file SettingsModel.cs
- * @author Unity MCP Assistant
- * @date 2026-02-28
- * @last_update 2026-02-28
- * @description Ayarlar verilerinin PlayerPrefs üzerinden yönetilmesini ve kalıcılığını sağlayan Model sınıfıdır.
- */
-
 using UnityEngine;
 
 namespace Settings
@@ -15,6 +7,9 @@ namespace Settings
     /// </summary>
     public class SettingsModel
     {
+        /// <summary> Ayarlar değiştiğinde tetiklenen statik olay. </summary>
+        public static System.Action OnSettingsChanged;
+
         /// <summary> Müzik ses seviyesi için kullanılan PlayerPrefs anahtarı. </summary>
         public const string MusicVolumeKey = "MusicVolume";
         /// <summary> SFX ses seviyesi için kullanılan PlayerPrefs anahtarı. </summary>
@@ -27,6 +22,14 @@ namespace Settings
         public const string LanguageKey = "Language";
         /// <summary> Haptic (Titreşim) açık/kapalı durumu için kullanılan PlayerPrefs anahtarı. </summary>
         public const string HapticEnabledKey = "HapticEnabled";
+        /// <summary> Kontrol yöntemi için kullanılan PlayerPrefs anahtarı (0: Button, 1: Tilt). </summary>
+        public const string ControlMethodKey = "ControlMethod";
+        /// <summary> Hızlanma modu için kullanılan PlayerPrefs anahtarı (0: Manual, 1: Auto). </summary>
+        public const string AccelerationModeKey = "AccelerationMode";
+        /// <summary> Kontrol hassasiyeti için kullanılan PlayerPrefs anahtarı. </summary>
+        public const string ControlSensitivityKey = "ControlSensitivity";
+        /// <summary> İvmeölçer sıfır noktası için kullanılan PlayerPrefs anahtarı. </summary>
+        public const string AccelerometerOffsetKey = "AccelerometerOffset";
 
         /// <summary> Mevcut müzik ses seviyesi (0.0f - 1.0f). </summary>
         public float MusicVolume { get; private set; }
@@ -40,6 +43,14 @@ namespace Settings
         public int LanguageIndex { get; private set; }
         /// <summary> Haptic (Titreşim) durumu. </summary>
         public bool HapticEnabled { get; private set; }
+        /// <summary> Seçili kontrol yöntemi (0: Button, 1: Tilt). </summary>
+        public int ControlMethod { get; private set; }
+        /// <summary> Seçili hızlanma modu (0: Auto, 1: Manual). </summary>
+        public int AccelerationMode { get; private set; }
+        /// <summary> Kontrol hassasiyeti (0.0f - 1.0f). </summary>
+        public float ControlSensitivity { get; private set; }
+        /// <summary> İvmeölçer sıfır noktası offset değeri. </summary>
+        public float AccelerometerOffset { get; private set; }
 
         /// <summary>
         /// Yeni bir SettingsModel örneği oluşturur ve mevcut ayarları yükler.
@@ -63,6 +74,10 @@ namespace Settings
                 SFXEnabled = PlayerPrefs.GetInt(SFXEnabledKey, 1) == 1;
                 LanguageIndex = PlayerPrefs.GetInt(LanguageKey, 0); // Varsayılan TR (0)
                 HapticEnabled = PlayerPrefs.GetInt(HapticEnabledKey, 1) == 1; // Varsayılan Açık (1)
+                ControlMethod = PlayerPrefs.GetInt(ControlMethodKey, 0); // Varsayılan Button (0)
+                AccelerationMode = PlayerPrefs.GetInt(AccelerationModeKey, 0); // Varsayılan Manuel (0)
+                ControlSensitivity = PlayerPrefs.GetFloat(ControlSensitivityKey, 0.5f); // Varsayılan %50
+                AccelerometerOffset = PlayerPrefs.GetFloat(AccelerometerOffsetKey, 0f);
             }
             catch (System.Exception e)
             {
@@ -82,6 +97,11 @@ namespace Settings
             SFXEnabled = true;
             LanguageIndex = 0;
             HapticEnabled = true;
+            ControlMethod = 0;
+            AccelerationMode = 0; // Varsayılan Manuel (0)
+            ControlSensitivity = 0.5f;
+            AccelerometerOffset = 0f;
+            OnSettingsChanged?.Invoke();
         }
 
         /// <summary>
@@ -92,6 +112,7 @@ namespace Settings
             MusicVolume = Mathf.Clamp01(volume);
             PlayerPrefs.SetFloat(MusicVolumeKey, MusicVolume);
             PlayerPrefs.Save();
+            OnSettingsChanged?.Invoke();
         }
 
         /// <summary>
@@ -102,6 +123,7 @@ namespace Settings
             SFXVolume = Mathf.Clamp01(volume);
             PlayerPrefs.SetFloat(SFXVolumeKey, SFXVolume);
             PlayerPrefs.Save();
+            OnSettingsChanged?.Invoke();
         }
 
         /// <summary>
@@ -112,6 +134,7 @@ namespace Settings
             MusicEnabled = enabled;
             PlayerPrefs.SetInt(MusicEnabledKey, enabled ? 1 : 0);
             PlayerPrefs.Save();
+            OnSettingsChanged?.Invoke();
         }
 
         /// <summary>
@@ -122,6 +145,7 @@ namespace Settings
             SFXEnabled = enabled;
             PlayerPrefs.SetInt(SFXEnabledKey, enabled ? 1 : 0);
             PlayerPrefs.Save();
+            OnSettingsChanged?.Invoke();
         }
 
         /// <summary>
@@ -132,6 +156,7 @@ namespace Settings
             LanguageIndex = index;
             PlayerPrefs.SetInt(LanguageKey, index);
             PlayerPrefs.Save();
+            OnSettingsChanged?.Invoke();
         }
 
         /// <summary>
@@ -143,6 +168,59 @@ namespace Settings
             PlayerPrefs.SetInt(HapticEnabledKey, enabled ? 1 : 0);
             HapticManager.IsEnabled = enabled;
             PlayerPrefs.Save();
+            OnSettingsChanged?.Invoke();
         }
+
+        /// <summary>
+        /// Kontrol yöntemini ayarlar ve kaydeder.
+        /// </summary>
+        public void SetControlMethod(int index)
+        {
+            ControlMethod = index;
+            PlayerPrefs.SetInt(ControlMethodKey, index);
+            PlayerPrefs.Save();
+            OnSettingsChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// Hızlanma modunu ayarlar ve kaydeder.
+        /// </summary>
+        public void SetAccelerationMode(int index)
+        {
+            AccelerationMode = index;
+            PlayerPrefs.SetInt(AccelerationModeKey, index);
+            PlayerPrefs.Save();
+            OnSettingsChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// Kontrol hassasiyetini ayarlar ve kaydeder.
+        /// </summary>
+        public void SetControlSensitivity(float val)
+        {
+            ControlSensitivity = Mathf.Clamp(val, 0f, 1f);
+            PlayerPrefs.SetFloat(ControlSensitivityKey, ControlSensitivity);
+            PlayerPrefs.Save();
+            OnSettingsChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// İvmeölçer sıfır noktası offsetini ayarlar ve kaydeder.
+        /// </summary>
+        public void SetAccelerometerOffset(float offset)
+        {
+            AccelerometerOffset = offset;
+            PlayerPrefs.SetFloat(AccelerometerOffsetKey, offset);
+            PlayerPrefs.Save();
+            OnSettingsChanged?.Invoke();
+        }
+
+
+        /// <summary> Global değişim olayını tetikler (Dışarıdan sıfırlama durumları için). </summary>
+        public static void NotifyChanges()
+        {
+            OnSettingsChanged?.Invoke();
+        }
+
     }
 }

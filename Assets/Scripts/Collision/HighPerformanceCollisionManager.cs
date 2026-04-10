@@ -7,10 +7,17 @@ using UnityEngine;
 
 namespace Gazze.Collision
 {
+    /// <summary>
+    /// Job System ve Spatial Hash kullanarak yuksek performansli carpism a kontrolu yapar.
+    /// </summary>
     public class HighPerformanceCollisionManager : MonoBehaviour
     {
+        /// <summary>Global erisim icin singleton ornek.</summary>
         public static HighPerformanceCollisionManager Instance;
 
+        /// <summary>
+        /// Carpism a testi icin kaydedilen varlik verisi.
+        /// </summary>
         public struct EntityData
         {
             public int id;
@@ -22,6 +29,7 @@ namespace Gazze.Collision
             public int layer;
         }
 
+        /// <summary>Desteklenen carpism a hacim tipleri.</summary>
         public enum CollisionType { AABB, OBB, Sphere }
 
         private List<EntityData> dynamicEntities = new List<EntityData>();
@@ -44,11 +52,17 @@ namespace Gazze.Collision
             if (collisionResults.IsCreated) collisionResults.Dispose();
         }
 
+        /// <summary>
+        /// Bir sonraki kontrol turu icin varligi kaydeder.
+        /// </summary>
         public void RegisterEntity(EntityData entity)
         {
             dynamicEntities.Add(entity);
         }
 
+        /// <summary>
+        /// O anki kare icin biriken tum varliklari temizler.
+        /// </summary>
         public void ClearEntities()
         {
             dynamicEntities.Clear();

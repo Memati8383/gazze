@@ -16,10 +16,15 @@ namespace Settings
         private RectTransform container;
 
         [Header("Assets - Violet Theme")]
+        [Tooltip("Ayarlar panel arka plan sprite'i.")]
         public Sprite panelBg;
+        [Tooltip("Butonlarda kullanilacak ana sprite.")]
         public Sprite buttonSprite;
+        [Tooltip("Slider arka plan sprite'i.")]
         public Sprite sliderBg;
+        [Tooltip("Slider dolum sprite'i.")]
         public Sprite sliderFill;
+        [Tooltip("Slider handle sprite'i.")]
         public Sprite sliderHandle;
 
         public void Reconstruct()

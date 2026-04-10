@@ -4,6 +4,9 @@ using Unity.Burst;
 namespace Gazze.Collision
 {
     [BurstCompile]
+    /// <summary>
+    /// Burst uyumlu temel carpism a matematik yardimci metotlarini barindirir.
+    /// </summary>
     public static class CollisionMath
     {
         /// <summary>

@@ -1,3 +1,4 @@
+// V7 - 5 Upgrade System
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -10,26 +11,36 @@ namespace Gazze.UI
     /// </summary>
     public class UpgradePanelBuilder : MonoBehaviour
     {
+        static TMP_FontAsset fallbackFont;
         [Header("Colors")]
-        public Color accentColor  = new Color32(0,  210, 255, 255);
-        public Color goldColor    = new Color32(255, 200,  50, 255);
-        public Color textColor    = new Color32(235, 240, 255, 255);
-        public Color subTextColor = new Color32(130, 145, 185, 255);
-        public Color cardColor    = new Color32(20,  25,  48, 230);
-        public Color segmentEmpty = new Color32(50,  56,  85, 255);
-        public Color btnBuyColor  = new Color32(0,  170, 255, 255);
+        [Tooltip("Panel genelinde kullanılan varsayılan vurgu rengi.")]
+        public Color accentColor  = new Color32(255, 160, 80, 255); // Rich Amber
+        [Tooltip("Maksimum seviye ve premium vurgu rengi.")]
+        public Color goldColor    = new Color32(255, 215, 100, 255); // Polished Gold
+        [Tooltip("Birincil metin rengi.")]
+        public Color textColor    = new Color32(255, 253, 245, 255); // Silk White
+        [Tooltip("İkincil metin rengi.")]
+        public Color subTextColor = new Color32(210, 190, 160, 210); // Patina Gold
+        [Tooltip("Kart arka plan rengi.")]
+        public Color cardColor    = new Color32(25, 20, 15, 235); // Smoked Obsidian
+        [Tooltip("Boş segmentlerin rengi.")]
+        public Color segmentEmpty = new Color32(60, 55, 50, 200); // Desert Ash
+        [Tooltip("Yükseltme satın alma butonu rengi.")]
+        public Color btnBuyColor  = new Color32(255, 140, 40, 255); // Burnt Orange
 
-        private const float CARD_H = 100f;
+        private const float CARD_H = 150f;
 
         static readonly Color[] CardAccents =
         {
-            new Color32(0,   210, 255, 255), // Cyan   – Hız
-            new Color32(60,  245, 110, 255), // Green  – İvme
-            new Color32(255,  75,  80, 255), // Red    – Dayanıklılık
-            new Color32(255, 148,  20, 255), // Orange – Boost
+            new Color32(255, 215, 130, 255), // Speed - Gold
+            new Color32(100, 220, 140, 255), // Accel - Mint Green (Muted)
+            new Color32(255,  85,  70, 255), // Durability - Crimson
+            new Color32(255, 160,  60, 255), // Boost - Amber
+            new Color32(255, 240, 200, 255), // Refill - Ivory
         };
-        static readonly string[] Icons  = { "SPD", "ACC", "DUR", "BST" };
-        static readonly string[] Labels = { "MAKS HIZ", "İVME", "DAYANIKLILIK", "BOOST" };
+        static readonly string[] Icons  = { "SPD", "ACC", "DUR", "BST", "FIL" };
+        static readonly string[] Labels = { "HIZ", "İVME", "CAN", "BOOST", "DOLUM" };
+        static readonly string[] LocKeys = { "Garage_Label_Speed", "Garage_Label_Accel", "Garage_Label_Durability", "Garage_Label_Boost", "Garage_Label_Refill" };
 
         // ─── ENTRY POINT ────────────────────────────────────────────────
         [ContextMenu("YÜKSELTME PANELİNİ SIFIRDAN KUR")]
@@ -103,7 +114,7 @@ namespace Gazze.UI
             var costTexts = new List<TextMeshProUGUI>();
             var buttons   = new List<Button>();
 
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 5; i++)
             {
                 BuildCard(i, rowGo.transform, out var l, out var c, out var b);
                 lvlTexts.Add(l); costTexts.Add(c); buttons.Add(b);
@@ -140,11 +151,37 @@ namespace Gazze.UI
             tg.transform.SetParent(go.transform, false);
             tg.GetComponent<RectTransform>().sizeDelta = new Vector2(190, 20);
             var t = tg.AddComponent<TextMeshProUGUI>();
-            t.text = "GELİŞTİRMELER"; t.fontSize = 14;
+            
+            string titleKey = "Garage_Upgrades_Title";
+            t.text = LocalizationManager.Instance != null ? LocalizationManager.Instance.GetTranslation(titleKey) : "GELİŞTİRMELER";
+            
+            var loc = tg.AddComponent<LocalizedText>();
+            loc.SetKey(titleKey);
+
+            t.fontSize = 14;
             t.fontStyle = FontStyles.Bold; t.alignment = TextAlignmentOptions.Center;
             t.color = textColor; t.characterSpacing = 3; t.raycastTarget = false;
 
+            EnsureFontFallback(t);
             MkLine(go.transform, 40);
+        }
+
+        void EnsureFontFallback(TextMeshProUGUI t)
+        {
+            if (fallbackFont == null)
+                fallbackFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
+            
+            if (t.font != null && fallbackFont != null)
+            {
+                if (t.font.fallbackFontAssetTable == null) t.font.fallbackFontAssetTable = new List<TMP_FontAsset>();
+                if (!t.font.fallbackFontAssetTable.Contains(fallbackFont))
+                {
+                    t.font.fallbackFontAssetTable.Add(fallbackFont);
+#if UNITY_EDITOR
+                    UnityEditor.EditorUtility.SetDirty(t.font);
+#endif
+                }
+            }
         }
 
         void MkLine(Transform p, float w)
@@ -209,7 +246,7 @@ namespace Gazze.UI
             iText.fontStyle = FontStyles.Bold;
             iText.alignment = TextAlignmentOptions.Center; iText.raycastTarget = false;
 
-            // İsim
+            // İsim (Localized)
             var nGo = new GameObject("Nm", typeof(RectTransform));
             nGo.transform.SetParent(topGo.transform, false);
             nGo.GetComponent<RectTransform>().sizeDelta = new Vector2(120, 16);
@@ -217,6 +254,9 @@ namespace Gazze.UI
             nT.text = Labels[idx]; nT.fontSize = 9f; nT.color = textColor;
             nT.fontStyle = FontStyles.Bold; nT.alignment = TextAlignmentOptions.Left;
             nT.raycastTarget = false; nT.textWrappingMode = TextWrappingModes.NoWrap;
+            
+            var loc = nGo.AddComponent<LocalizedText>();
+            loc.SetKey(LocKeys[idx]);
 
             // ── Seviye metni ──
             var lvlGo = Anchor(card.transform, "Lvl",
@@ -258,9 +298,9 @@ namespace Gazze.UI
             btn = btnGo.AddComponent<Button>();
             var cb = btn.colors;
             cb.normalColor      = btnBuyColor;
-            cb.highlightedColor = new Color(0.3f, 0.85f, 1f);
-            cb.pressedColor     = new Color(0f, 0.58f, 0.82f);
-            cb.disabledColor    = new Color(0.4f, 0.4f, 0.4f, 0.6f);
+            cb.highlightedColor = accentColor;
+            cb.pressedColor     = new Color(accentColor.r, accentColor.g, accentColor.b, 0.4f);
+            cb.disabledColor    = new Color(0.2f, 0.2f, 0.2f, 0.8f);
             btn.colors = cb;
 
             var sa = btnGo.AddComponent<ButtonScaleAnimator>();
@@ -357,10 +397,11 @@ namespace Gazze.UI
 
         static readonly Color[] Accents =
         {
-            new Color32(0,   210, 255, 255),
-            new Color32(60,  245, 110, 255),
-            new Color32(255,  75,  80, 255),
-            new Color32(255, 148,  20, 255),
+            new Color32(255, 215, 130, 255),
+            new Color32(100, 220, 140, 255),
+            new Color32(255,  85,  70, 255),
+            new Color32(255, 160,  60, 255),
+            new Color32(255, 240, 200, 255),
         };
 
         public void UpdateLevel(int level, int maxLevel)

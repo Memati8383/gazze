@@ -6,6 +6,9 @@ using UnityEngine.SceneManagement;
 /// </summary>
 public class MenuNavigator : MonoBehaviour
 {
+    /// <summary>
+    /// Ana menu sahnesini yukleme ekraniyla (varsa) acar.
+    /// </summary>
     public void LoadMainMenu()
     {
         // AudioManager varsa tıklama sesini çal

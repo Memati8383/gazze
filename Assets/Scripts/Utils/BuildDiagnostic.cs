@@ -1,6 +1,9 @@
 using UnityEngine;
 using System.IO;
 
+/// <summary>
+/// Uygulama acilisinda temel ortam bilgilerini bir dosyaya yazarak build tanisini kolaylastirir.
+/// </summary>
 public static class BuildDiagnostic
 {
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]

@@ -11,6 +11,7 @@ namespace Gazze.VisualEffects
     public class BoostPostProcessManager : MonoBehaviour
     {
         [Header("Bileşenler")]
+        [Tooltip("Boost efektleri için kullanılan URP Volume referansı.")]
         public Volume boostVolume;
         
         [Header("Boost Efekt Ayarları")]

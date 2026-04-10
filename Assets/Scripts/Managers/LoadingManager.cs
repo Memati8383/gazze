@@ -45,34 +45,59 @@ public class LoadingManager : MonoBehaviour
     }
 
     [Header("UI Elemanları")]
+    [Tooltip("Yükleme ekranını tutan ana Canvas objesi.")]
     public GameObject loadingCanvas;
+    [Tooltip("Yükleme ekranı fade geçişleri için CanvasGroup referansı.")]
     public CanvasGroup loadingCanvasGroup;
+    [Tooltip("Yükleme ilerlemesini gösteren slider.")]
     public Slider progressBar;
+    [Tooltip("Slider dolum görseli (opsiyonel renk animasyonları için).")]
     public Image progressBarFill;
+    [Tooltip("Yüzdelik ilerlemeyi gösteren metin.")]
     public TextMeshProUGUI percentageText;
+    [Tooltip("Durum mesajını gösteren metin.")]
     public TextMeshProUGUI statusText;
+    [Tooltip("Tam ekran arka plan görseli.")]
     public Image backgroundImage;
+    [Tooltip("Yükleme sırasında dönen spinner görseli (opsiyonel).")]
     public Image spinner;
+    [Tooltip("Logo görseli (opsiyonel).")]
     public Image logo;
+    [Tooltip("İlerleme çubuğu üzerindeki glow katmanı (opsiyonel).")]
     public Image barGlow;
+    [Tooltip("Alt bölümdeki metin ve progress bar konteyneri.")]
     public RectTransform bottomContainer;
+    [Tooltip("Yüklemeyi iptal et butonu (opsiyonel).")]
     public Button cancelButton;
 
     [Header("Ayarlar")]
+    [Tooltip("Eksikse başlangıçta varsayılan UI hiyerarşisini otomatik oluşturur.")]
     public bool createUIOnStartIfMissing = true;
+    [Tooltip("Yükleme ekranının minimum görünme süresi (sn).")]
     public float minDisplayTime = 1.0f; // Tasarımın keyfini çıkarmak için ideal süre
+    [Tooltip("Spinner dönüş hızı (derece/sn).")]
     public float spinnerRotationSpeed = 360f;
+    [Tooltip("Fade animasyon süresi (sn).")]
     public float fadeDuration = 0.4f;
+    [Tooltip("Progress bar değerinin hedefe yumuşama süresi.")]
     public float progressBarSmoothTime = 0.15f;
+    [Tooltip("Alt konteynerin dikey salınım genliği.")]
     public float floatingAmplitude = 8f;
+    [Tooltip("Alt konteynerin dikey salınım hızı.")]
     public float floatingSpeed = 1.5f;
     
     [Header("Arkaplan Animasyon Ayarları")]
+    [Tooltip("Arka plan pulse animasyonunu açar/kapatır.")]
     public bool animateBackground = true;
+    [Tooltip("Arka plan pulse animasyon hızı.")]
     public float bgPulseSpeed = 0.8f;
+    [Tooltip("Arka plan pulse ölçek genliği.")]
     public float bgPulseAmplitude = 0.03f;
+    [Tooltip("Arka plan renk/geçiş döngü hızı (gelecek kullanım için).")]
     public float bgCycleSpeed = 0.3f;
 
+    [Header("Tema")]
+    [Tooltip("Yükleme arayüzünde kullanılacak vurgu rengi.")]
     public Color accentColor = new Color(0f, 0.8f, 1f); // Cyan/Electric Blue (Bespoke Accent)
 
     private AsyncOperation _asyncOperation;
@@ -151,7 +176,6 @@ public class LoadingManager : MonoBehaviour
     /// Koddan UI oluşturma işlemi sadece fallback durumları içindir.
     /// </summary>
     [ContextMenu("Generate UI Hierarchy")]
-    [ContextMenu("Generate UI Hierarchy")]
     public void CreateDefaultUI()
     {
         if (loadingCanvas != null) return;
@@ -180,7 +204,7 @@ public class LoadingManager : MonoBehaviour
         bgRt.anchorMax = Vector2.one;
         bgRt.sizeDelta = Vector2.zero; // FIX: Tam ekran için sıfır
         bgRt.anchoredPosition = Vector2.zero;
-        backgroundImage.color = new Color(0.02f, 0.02f, 0.02f, 1f); // Deep Minimalist Black
+        backgroundImage.color = new Color(1f, 1f, 1f, 1f); // Pure Image (No Tint)
         
         // Logo
         GameObject logoGO = new GameObject("AppLogo", typeof(RectTransform), typeof(Image));
@@ -191,8 +215,8 @@ public class LoadingManager : MonoBehaviour
         logoRt.anchorMax = new Vector2(0.5f, 0.60f);
         logoRt.sizeDelta = new Vector2(120, 120);
         logoRt.anchoredPosition = Vector2.zero;
-        logo.sprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/Knob.psd");
-        logo.color = new Color(1f, 1f, 1f, 0.9f);
+        logo.sprite = Resources.Load<Sprite>("gazze_icon");
+        logo.color = new Color(1f, 1f, 1f, 1f);
 
         // Alt Konteynır
         GameObject containerGO = new GameObject("BottomContainer", typeof(RectTransform));
@@ -245,7 +269,6 @@ public class LoadingManager : MonoBehaviour
         glowRt.sizeDelta = new Vector2(0, 10);
         barGlow = glowGO.GetComponent<Image>();
         barGlow.color = new Color(1f, 1f, 1f, 0.15f);
-        barGlow.sprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/Knob.psd");
 
         // Percentage
         GameObject percGO = new GameObject("PercentageText", typeof(RectTransform), typeof(TextMeshProUGUI));
@@ -347,14 +370,14 @@ public class LoadingManager : MonoBehaviour
         _targetProgress = 0f;
         _displayProgress = 0f;
 
-        // Fade-In
-        if (loadingCanvas != null)
-        {
-            loadingCanvas.SetActive(true);
-            yield return StartCoroutine(FadeCanvas(0, 1));
-            string systemReady = Gazze.UI.LocalizationManager.Instance != null ? Gazze.UI.LocalizationManager.Instance.GetTranslation("Load_Readying") : "SİSTEM HAZIRLANIYOR";
-            UpdateUIState(0, systemReady);
-        }
+            // Fade-In
+            if (loadingCanvas != null)
+            {
+                loadingCanvas.SetActive(true);
+                yield return StartCoroutine(FadeCanvas(0, 1));
+                string systemReady = Gazze.UI.LocalizationManager.Get("Load_Readying", "SİSTEM HAZIRLANIYOR");
+                UpdateUIState(0, systemReady);
+            }
 
         // Asenkron Yükleme
         _asyncOperation = SceneManager.LoadSceneAsync(sceneName);
@@ -384,7 +407,7 @@ public class LoadingManager : MonoBehaviour
                     yield return new WaitForSecondsRealtime(minDisplayTime - elapsed);
                 }
 
-                string loadComplete = Gazze.UI.LocalizationManager.Instance != null ? Gazze.UI.LocalizationManager.Instance.GetTranslation("Load_Complete") : "YÜKLEME TAMAMLANDI";
+                string loadComplete = Gazze.UI.LocalizationManager.Get("Load_Complete", "YÜKLEME TAMAMLANDI");
                 UpdateUIState(1.0f, loadComplete);
                 
                 // Sahne değişiminden önce kısa bir bekleme (Arayüz geçiş doygunluğu)
@@ -427,18 +450,10 @@ public class LoadingManager : MonoBehaviour
 
     private string GetStatusMessage(float progress)
     {
-        if (Gazze.UI.LocalizationManager.Instance == null)
-        {
-            if (progress < 0.25f) return "VERİLER AYIKLANIYOR";
-            if (progress < 0.50f) return "VARLIKLAR YÜKLENİYOR";
-            if (progress < 0.75f) return "DÜNYA OLUŞTURULUYOR";
-            return "SON AYARLAR YAPILIYOR";
-        }
-
-        if (progress < 0.25f) return Gazze.UI.LocalizationManager.Instance.GetTranslation("Load_Data");
-        if (progress < 0.50f) return Gazze.UI.LocalizationManager.Instance.GetTranslation("Load_Assets");
-        if (progress < 0.75f) return Gazze.UI.LocalizationManager.Instance.GetTranslation("Load_World");
-        return Gazze.UI.LocalizationManager.Instance.GetTranslation("Load_Final");
+        if (progress < 0.25f) return Gazze.UI.LocalizationManager.Get("Load_Data", "VERİLER AYIKLANIYOR");
+        if (progress < 0.50f) return Gazze.UI.LocalizationManager.Get("Load_Assets", "VARLIKLAR YÜKLENİYOR");
+        if (progress < 0.75f) return Gazze.UI.LocalizationManager.Get("Load_World", "DÜNYA OLUŞTURULUYOR");
+        return Gazze.UI.LocalizationManager.Get("Load_Final", "SON AYARLAR YAPILIYOR");
     }
 
     public void CancelLoading()
@@ -501,4 +516,3 @@ public class LoadingManager : MonoBehaviour
     }
     #endif
 }
-

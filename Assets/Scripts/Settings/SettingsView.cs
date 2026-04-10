@@ -1,11 +1,3 @@
-/**
- * @file SettingsView.cs
- * @author Unity MCP Assistant
- * @date 2026-02-28
- * @last_update 2026-02-28
- * @description Ayarlar panelinin kullanıcı arayüzü (UI) bileşenlerini yöneten ve kullanıcı etkileşimlerini Controller'a ileten View sınıfıdır.
- */
-
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -21,28 +13,48 @@ namespace Settings
     {
         [Header("Müzik Ayarları")]
         /// <summary> Müzik ses seviyesini ayarlayan slider. </summary>
+        [Tooltip("Muzik ses seviyesini ayarlayan slider.")]
         public Slider musicSlider;
         /// <summary> Müziği açıp kapatan toggle. </summary>
+        [Tooltip("Muzigi acip kapatan toggle.")]
         public Toggle musicToggle;
 
         [Header("SFX Ayarları")]
         /// <summary> SFX ses seviyesini ayarlayan slider. </summary>
+        [Tooltip("SFX ses seviyesini ayarlayan slider.")]
         public Slider sfxSlider;
         /// <summary> SFX'i açıp kapatan toggle. </summary>
+        [Tooltip("SFX'i acip kapatan toggle.")]
         public Toggle sfxToggle;
 
         [Header("Dil Ayarları")]
         /// <summary> Dil seçimi dropdown menüsü. </summary>
+        [Tooltip("Oyun dili secimi icin dropdown.")]
         public TMP_Dropdown languageDropdown;
 
         [Header("Titreşim Ayarları")]
         /// <summary> Titreşimi (Haptic) açıp kapatan toggle. </summary>
+        [Tooltip("Haptic geri bildirimi acip kapatan toggle.")]
         public Toggle hapticToggle;
+
+        [Header("Kontrol Ayarları")]
+        /// <summary> Kontrol yöntemi dropdownı. </summary>
+        public TMP_Dropdown controlMethodDropdown;
+        /// <summary> Hızlanma modu dropdownı. </summary>
+        public TMP_Dropdown accelerationModeDropdown;
+        /// <summary> Kontrol hassasiyeti sliderı. </summary>
+        public Slider controlSensitivitySlider;
+        /// <summary> İvmeölçer kalibrasyon butonu. </summary>
+        public Button calibrateButton;
+        /// <summary> Kalibrasyon butonunun içinde bulunduğu panel (Tilt seçildiğinde görünür). </summary>
+        public GameObject calibrationPanel;
 
         [Header("Navigasyon")]
         /// <summary> Ayarlar panelinden çıkış butonu. </summary>
+        [Tooltip("Ayarlar panelini kapatan geri butonu.")]
         public Button backButton;
         /// <summary> Tüm ilerlemeyi sıfırlayan buton. </summary>
+        [Tooltip("Tum oyun ilerlemesini sifirlama butonu.")]
         public Button resetProgressButton;
 
         /// <summary> Müzik sesi değiştiğinde tetiklenen olay. </summary>
@@ -61,17 +73,111 @@ namespace Settings
         public event Action OnBackButtonClicked;
         /// <summary> İlerlemeyi sıfırla butonuna tıklandığında tetiklenen olay. </summary>
         public event Action OnResetProgressClicked;
+        /// <summary> Kontrol yöntemi değiştiğinde tetiklenen olay. </summary>
+        public event Action<int> OnControlMethodChanged;
+        /// <summary> Hızlanma modu değiştiğinde tetiklenen olay. </summary>
+        public event Action<int> OnAccelerationModeChanged;
+        /// <summary> Kontrol hassasiyeti değiştiğinde tetiklenen olay. </summary>
+        public event Action<float> OnControlSensitivityChanged;
+        /// <summary> Kalibrasyon butonuna tıklandığında tetiklenen olay. </summary>
+        public event Action OnCalibrateClicked;
+        
 
         private void Start()
-        {            // UI bileşenlerinin olaylarını C# olaylarına (events) bağla
-            if (musicSlider != null) musicSlider.onValueChanged.AddListener(val => { OnMusicVolumeChanged?.Invoke(val); });
-            if (musicToggle != null) musicToggle.onValueChanged.AddListener(val => { PlayClick(); OnMusicToggleChanged?.Invoke(val); });
-            if (sfxSlider != null) sfxSlider.onValueChanged.AddListener(val => { OnSFXVolumeChanged?.Invoke(val); });
-            if (sfxToggle != null) sfxToggle.onValueChanged.AddListener(val => { PlayClick(); OnSFXToggleChanged?.Invoke(val); });
-            if (languageDropdown != null) languageDropdown.onValueChanged.AddListener(val => { PlayClick(); OnLanguageChanged?.Invoke(val); });
-            if (hapticToggle != null) hapticToggle.onValueChanged.AddListener(val => { PlayClick(); OnHapticToggleChanged?.Invoke(val); });
-            if (backButton != null) backButton.onClick.AddListener(() => { PlayClick(); OnBackButtonClicked?.Invoke(); });
-            if (resetProgressButton != null) resetProgressButton.onClick.AddListener(() => { PlayClick(); OnResetProgressClicked?.Invoke(); });
+        {
+            InitializeListeners();
+        }
+
+        /// <summary>
+        /// UI bileşenlerini dinlemeye başlar. Referanslar değiştiğinde tekrar çağrılmalıdır.
+        /// </summary>
+        /// <summary>
+        /// UI bileşenlerini dinlemeye başlar. Referanslar değiştiğinde tekrar çağrılmalıdır.
+        /// </summary>
+        public void InitializeListeners()
+        {
+            // Not: RemoveAllListeners() kullanmıyoruz çünkü VisualOverhaul tarafından eklenen 
+            // dahili animasyon ve metin güncelleme dinleyicilerini (listeners) siler.
+            // Bunun yerine her zaman tek bir wrapper listener ekliyoruz.
+
+            if (musicSlider != null) 
+            {
+                musicSlider.onValueChanged.RemoveListener(OnMusicSliderInput);
+                musicSlider.onValueChanged.AddListener(OnMusicSliderInput);
+            }
+            if (musicToggle != null) 
+            {
+                musicToggle.onValueChanged.RemoveListener(OnMusicToggleInput);
+                musicToggle.onValueChanged.AddListener(OnMusicToggleInput);
+            }
+            if (sfxSlider != null) 
+            {
+                sfxSlider.onValueChanged.RemoveListener(OnSFXSliderInput);
+                sfxSlider.onValueChanged.AddListener(OnSFXSliderInput);
+            }
+            if (sfxToggle != null) 
+            {
+                sfxToggle.onValueChanged.RemoveListener(OnSFXToggleInput);
+                sfxToggle.onValueChanged.AddListener(OnSFXToggleInput);
+            }
+            if (languageDropdown != null) 
+            {
+                languageDropdown.onValueChanged.RemoveListener(OnLanguageInput);
+                languageDropdown.onValueChanged.AddListener(OnLanguageInput);
+            }
+            if (hapticToggle != null) 
+            {
+                hapticToggle.onValueChanged.RemoveListener(OnHapticInput);
+                hapticToggle.onValueChanged.AddListener(OnHapticInput);
+            }
+            if (backButton != null) 
+            {
+                backButton.onClick.RemoveListener(OnBackInput);
+                backButton.onClick.AddListener(OnBackInput);
+            }
+            if (resetProgressButton != null) 
+            {
+                resetProgressButton.onClick.RemoveListener(OnResetInput);
+                resetProgressButton.onClick.AddListener(OnResetInput);
+            }
+            if (controlMethodDropdown != null)
+            {
+                controlMethodDropdown.onValueChanged.RemoveListener(OnControlMethodInput);
+                controlMethodDropdown.onValueChanged.AddListener(OnControlMethodInput);
+            }
+            if (accelerationModeDropdown != null)
+            {
+                accelerationModeDropdown.onValueChanged.RemoveListener(OnAccelerationModeInput);
+                accelerationModeDropdown.onValueChanged.AddListener(OnAccelerationModeInput);
+            }
+            if (controlSensitivitySlider != null)
+            {
+                controlSensitivitySlider.onValueChanged.RemoveListener(OnControlSensitivityInput);
+                controlSensitivitySlider.onValueChanged.AddListener(OnControlSensitivityInput);
+            }
+            if (calibrateButton != null)
+            {
+                calibrateButton.onClick.RemoveListener(OnCalibrateInput);
+                calibrateButton.onClick.AddListener(OnCalibrateInput);
+            }
+        }
+
+        private void OnMusicSliderInput(float v) => OnMusicVolumeChanged?.Invoke(v);
+        private void OnMusicToggleInput(bool v) { PlayClick(); OnMusicToggleChanged?.Invoke(v); }
+        private void OnSFXSliderInput(float v) => OnSFXVolumeChanged?.Invoke(v);
+        private void OnSFXToggleInput(bool v) { PlayClick(); OnSFXToggleChanged?.Invoke(v); }
+        private void OnLanguageInput(int v) { PlayClick(); OnLanguageChanged?.Invoke(v); languageDropdown.RefreshShownValue(); }
+        private void OnHapticInput(bool v) { PlayClick(); OnHapticToggleChanged?.Invoke(v); }
+        private void OnBackInput() { PlayClick(); OnBackButtonClicked?.Invoke(); }
+        private void OnResetInput() { PlayClick(); OnResetProgressClicked?.Invoke(); }
+        private void OnControlMethodInput(int v) { PlayClick(); OnControlMethodChanged?.Invoke(v); ToggleCalibrationPanel(v == 1); }
+        private void OnAccelerationModeInput(int v) { PlayClick(); OnAccelerationModeChanged?.Invoke(v); }
+        private void OnControlSensitivityInput(float v) => OnControlSensitivityChanged?.Invoke(v);
+        private void OnCalibrateInput() { PlayClick(); OnCalibrateClicked?.Invoke(); }
+
+        private void ToggleCalibrationPanel(bool visible)
+        {
+            if (calibrationPanel != null) calibrationPanel.SetActive(visible);
         }
 
         /// <summary>
@@ -92,9 +198,24 @@ namespace Settings
             {
                 Gazze.UI.LocalizationManager.Instance.LoadSavedLanguage();
             }
+
+            // UI'ı varsayılan değerlere döndür
+            UpdateUI(1f, true, 1f, true, 0, true, 0, 0, 0.5f);
             
-            // Sahneyi yeniden yükle ki değişiklikler hemen görünsün
+            // Tüm sistemlere ayarların resetlendiğini bildir (PlayerController vb.)
+            SettingsModel.NotifyChanges();
+        }
+            
+        /// <summary> Sahneyi yeniden yükle ki değişiklikler hemen görünsün </summary>
+        public void ResetScene()
+        {
             UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+        }
+
+        /// <summary> Dil seçimini manuel tetikler (Dropdown yerine butonlar için). </summary>
+        public void TriggerLanguageChange(int index)
+        {
+            OnLanguageChanged?.Invoke(index);
         }
 
         private void PlayClick()
@@ -110,16 +231,47 @@ namespace Settings
         /// <param name="sfxVol">SFX sesi.</param>
         /// <param name="sfxOn">SFX açık mı?</param>
         /// <param name="langIndex">Dil indeksi.</param>
-        /// <param name="langIndex">Dil indeksi.</param>
         /// <param name="hapticOn">Haptic açık mı?</param>
-        public void UpdateUI(float musicVol, bool musicOn, float sfxVol, bool sfxOn, int langIndex, bool hapticOn)
+        /// <param name="controlIndex">Kontrol yöntemi.</param>
+        /// <param name="accelIndex">Hızlanma modu.</param>
+        /// <param name="sensitivity">Hassasiyet.</param>
+        public void UpdateUI(float musicVol, bool musicOn, float sfxVol, bool sfxOn, int langIndex, bool hapticOn, int controlIndex, int accelIndex, float sensitivity)
         {
             if (musicSlider != null) musicSlider.SetValueWithoutNotify(musicVol);
-            if (musicToggle != null) musicToggle.SetIsOnWithoutNotify(musicOn);
+            if (musicToggle != null)
+            {
+                musicToggle.SetIsOnWithoutNotify(musicOn);
+                var anim = musicToggle.GetComponent<SettingsSmoothToggleAnimator>();
+                if (anim != null) anim.SetState(musicOn, true);
+            }
             if (sfxSlider != null) sfxSlider.SetValueWithoutNotify(sfxVol);
-            if (sfxToggle != null) sfxToggle.SetIsOnWithoutNotify(sfxOn);
-            if (languageDropdown != null) languageDropdown.SetValueWithoutNotify(langIndex);
-            if (hapticToggle != null) hapticToggle.SetIsOnWithoutNotify(hapticOn);
+            if (sfxToggle != null)
+            {
+                sfxToggle.SetIsOnWithoutNotify(sfxOn);
+                var anim = sfxToggle.GetComponent<SettingsSmoothToggleAnimator>();
+                if (anim != null) anim.SetState(sfxOn, true);
+            }
+            if (languageDropdown != null)
+            {
+                languageDropdown.SetValueWithoutNotify(langIndex);
+                languageDropdown.RefreshShownValue();
+            }
+            if (hapticToggle != null)
+            {
+                hapticToggle.SetIsOnWithoutNotify(hapticOn);
+                var anim = hapticToggle.GetComponent<SettingsSmoothToggleAnimator>();
+                if (anim != null) anim.SetState(hapticOn, true);
+            }
+
+            // Yeni Dil Butonlarını Güncelle
+            var adapter = GetComponentInChildren<LanguageSwitcherAdapter>();
+            if (adapter != null) adapter.UpdateVisuals(langIndex);
+
+            // Yeni Kontrol Ayarlarını Güncelle
+            if (controlMethodDropdown != null) controlMethodDropdown.SetValueWithoutNotify(controlIndex);
+            if (accelerationModeDropdown != null) accelerationModeDropdown.SetValueWithoutNotify(accelIndex);
+            if (controlSensitivitySlider != null) controlSensitivitySlider.SetValueWithoutNotify(sensitivity);
+            ToggleCalibrationPanel(controlIndex == 1);
         }
 
         private CanvasGroup canvasGroup;

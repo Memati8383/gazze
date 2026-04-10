@@ -26,6 +26,7 @@
 .DS_Store
 .collabignore
 .vs
+.qoder
 .vscode
 *.booproj
 *.pidb

@@ -5,20 +5,31 @@ using System.Collections.Generic;
 
 namespace Gazze.UI
 {
+    /// <summary>
+    /// Dayaniklilik degerini kalp ikonlariyla gosteren ve gecis animasyonlarini yoneten UI bileşeni.
+    /// </summary>
     public class HealthHeartDisplay : MonoBehaviour
     {
         [Header("Sprites")]
+        [Tooltip("Dolu kalp icin kullanilan sprite.")]
         public Sprite fullHeartSprite;
+        [Tooltip("Bos kalp icin kullanilan sprite.")]
         public Sprite emptyHeartSprite;
 
         [Header("Settings")]
+        [Tooltip("Bir kalbin temsil ettigi can miktari.")]
         public float healthPerHeart = 100f;
+        [Tooltip("Her bir kalp ikonunun boyutu.")]
         public Vector2 heartSize = new Vector2(60, 60);
 
         [Header("Animation Settings")]
+        [Tooltip("Kalplerin giris animasyon hizi.")]
         public float entranceSpeed = 10f;
+        [Tooltip("Can degisiminde uygulanan punch olcegi.")]
         public float punchIntensity = 1.3f;
+        [Tooltip("Idle salinim frekansi.")]
         public float idleFloatFrequency = 1.5f;
+        [Tooltip("Idle salinim miktari.")]
         public float idleFloatAmount = 2.5f;
 
         private List<Image> heartImages = new List<Image>();

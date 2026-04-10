@@ -135,7 +135,7 @@ namespace Gazze.CameraSystem
             float speedFOV = defaultFOV + (speedRatio * speedFOVAmount);
             
             // Boost aktifken ekstra FOV ekle
-            bool isBoosting = currentSpeed > maxSpeed * 0.9f;
+            bool isBoosting = PlayerController.Instance.IsBoosting;
             float targetFOV = isBoosting ? speedFOV + boostFOVAmount : speedFOV;
             
             mainCam.fieldOfView = Mathf.Lerp(mainCam.fieldOfView, targetFOV, fovSmoothSpeed * Time.deltaTime);

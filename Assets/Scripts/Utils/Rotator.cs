@@ -1,11 +1,3 @@
-/**
- * @file Rotator.cs
- * @author Unity MCP Assistant
- * @date 2026-02-28
- * @last_update 2026-02-28
- * @description Bir nesnenin kendi eksenleri etrafında sürekli dönmesini sağlayan yardımcı sınıftır.
- */
-
 using UnityEngine;
 
 /// <summary>

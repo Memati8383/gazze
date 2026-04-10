@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-3826899179506008857
+--- !u!114 &-5972914752473383483
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -10,21 +10,96 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b9d57de82768ccb4b9e2c131543ef8f1, type: 3}
-  m_Name: Standard_Car
+  m_Name: Car2_Sports
   m_EditorClassIdentifier: Gazze.Runtime::Gazze.Models.VehicleAttributes
-  vehicleClass: 0
-  maxSpeedKmh: 150
+  vehicleClass: 2
+  maxSpeedKmh: 230
   surfaceMultipliers: []
-  zeroToHundredTime: 8.5
-  accelerationMs2: 4
+  zeroToHundredTime: 4.5
+  accelerationMs2: 7
   turnRadius: 5
-  steeringSensitivity: 1
+  steeringSensitivity: 1.7
   driftCoefficient: 0.5
   aerodynamicCoefficient: 0.3
   durability: 100
   repairCostFactor: 1
   repairTimeFactor: 1
-  isLocked: 0
+  isLocked: 1
+--- !u!114 &-4731248881847635603
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b9d57de82768ccb4b9e2c131543ef8f1, type: 3}
+  m_Name: Car3_Sports
+  m_EditorClassIdentifier: Gazze.Runtime::Gazze.Models.VehicleAttributes
+  vehicleClass: 2
+  maxSpeedKmh: 260
+  surfaceMultipliers: []
+  zeroToHundredTime: 4
+  accelerationMs2: 8
+  turnRadius: 5
+  steeringSensitivity: 1.9
+  driftCoefficient: 0.5
+  aerodynamicCoefficient: 0.3
+  durability: 100
+  repairCostFactor: 1
+  repairTimeFactor: 1
+  isLocked: 1
+--- !u!114 &-3766685441586539954
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b9d57de82768ccb4b9e2c131543ef8f1, type: 3}
+  m_Name: Car4_Heavy
+  m_EditorClassIdentifier: Gazze.Runtime::Gazze.Models.VehicleAttributes
+  vehicleClass: 1
+  maxSpeedKmh: 110
+  surfaceMultipliers: []
+  zeroToHundredTime: 11
+  accelerationMs2: 2.8
+  turnRadius: 5
+  steeringSensitivity: 0.7
+  driftCoefficient: 0.5
+  aerodynamicCoefficient: 0.3
+  durability: 150
+  repairCostFactor: 1
+  repairTimeFactor: 1
+  isLocked: 1
+--- !u!114 &-394093751656918402
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b9d57de82768ccb4b9e2c131543ef8f1, type: 3}
+  m_Name: Car1_Standard
+  m_EditorClassIdentifier: Gazze.Runtime::Gazze.Models.VehicleAttributes
+  vehicleClass: 0
+  maxSpeedKmh: 160
+  surfaceMultipliers: []
+  zeroToHundredTime: 8
+  accelerationMs2: 4.2
+  turnRadius: 5
+  steeringSensitivity: 1.1
+  driftCoefficient: 0.5
+  aerodynamicCoefficient: 0.3
+  durability: 100
+  repairCostFactor: 1
+  repairTimeFactor: 1
+  isLocked: 1
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -38,10 +113,12 @@ MonoBehaviour:
   m_Name: VehicleRepository
   m_EditorClassIdentifier: Gazze.Runtime::Gazze.Models.VehicleRepository
   vehicles:
-  - {fileID: -3826899179506008857}
-  - {fileID: 7788878642997757905}
-  - {fileID: 2375418667605996317}
---- !u!114 &2375418667605996317
+  - {fileID: 1892791518238772558}
+  - {fileID: -394093751656918402}
+  - {fileID: -5972914752473383483}
+  - {fileID: -4731248881847635603}
+  - {fileID: -3766685441586539954}
+--- !u!114 &1892791518238772558
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -51,43 +128,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b9d57de82768ccb4b9e2c131543ef8f1, type: 3}
-  m_Name: Heavy_Truck
+  m_Name: Car0_Standard
   m_EditorClassIdentifier: Gazze.Runtime::Gazze.Models.VehicleAttributes
-  vehicleClass: 1
-  maxSpeedKmh: 100
+  vehicleClass: 0
+  maxSpeedKmh: 140
   surfaceMultipliers: []
-  zeroToHundredTime: 12
-  accelerationMs2: 2.5
+  zeroToHundredTime: 9
+  accelerationMs2: 3.8
   turnRadius: 5
-  steeringSensitivity: 0.6
+  steeringSensitivity: 1
   driftCoefficient: 0.5
   aerodynamicCoefficient: 0.3
   durability: 100
   repairCostFactor: 1
   repairTimeFactor: 1
-  isLocked: 1
---- !u!114 &7788878642997757905
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b9d57de82768ccb4b9e2c131543ef8f1, type: 3}
-  m_Name: Sports_Car
-  m_EditorClassIdentifier: Gazze.Runtime::Gazze.Models.VehicleAttributes
-  vehicleClass: 2
-  maxSpeedKmh: 250
-  surfaceMultipliers: []
-  zeroToHundredTime: 4.2
-  accelerationMs2: 7.5
-  turnRadius: 5
-  steeringSensitivity: 1.8
-  driftCoefficient: 0.5
-  aerodynamicCoefficient: 0.3
-  durability: 70
-  repairCostFactor: 1
-  repairTimeFactor: 1
-  isLocked: 1
+  isLocked: 0

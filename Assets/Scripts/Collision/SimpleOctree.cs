@@ -10,12 +10,18 @@ namespace Gazze.Collision
     /// </summary>
     public class SimpleOctree
     {
+        /// <summary>Bu dugumun merkez noktasi.</summary>
         private float3 center;
+        /// <summary>Bu dugumun kupe benzeri kapsama boyutu.</summary>
         private float size;
+        /// <summary>Kalan bolunme derinligi.</summary>
         private int maxDepth;
         private List<CollisionEntity> objects;
         private SimpleOctree[] children;
 
+        /// <summary>
+        /// Octree icinde saklanan carpism a aday nesne verisi.
+        /// </summary>
         public struct CollisionEntity
         {
             public int id;
@@ -25,6 +31,7 @@ namespace Gazze.Collision
             public CollisionType type;
         }
 
+        /// <summary>Desteklenen carpism a hacim tipleri.</summary>
         public enum CollisionType { AABB, OBB, Sphere }
 
         public SimpleOctree(float3 center, float size, int maxDepth)

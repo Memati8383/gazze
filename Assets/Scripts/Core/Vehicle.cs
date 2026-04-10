@@ -24,8 +24,19 @@ namespace Gazze.Vehicles
         {
             if (attributes == null)
             {
-                Debug.LogWarning($"{gameObject.name} üzerinde 'Vehicle' bileşeni var ama 'Attributes' atanmamış!");
+                Debug.LogWarning($"{gameObject.name} (Path: {GetPath(transform)}) üzerinde 'Vehicle' bileşeni var ama 'Attributes' atanmamış!");
             }
+        }
+
+        private string GetPath(Transform t)
+        {
+            string path = t.name;
+            while (t.parent != null)
+            {
+                t = t.parent;
+                path = t.name + "/" + path;
+            }
+            return path;
         }
     }
 }

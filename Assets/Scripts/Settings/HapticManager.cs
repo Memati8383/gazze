@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 namespace Settings
 {
@@ -19,28 +20,27 @@ namespace Settings
 
         /// <summary>
         /// Hafif bir geri bildirim gönderir (UI Seçimleri, Buton Tıklamaları).
-        /// Not: Unity standart Handheld.Vibrate() sadece ağır bir titreşim yapar.
-        /// Modern mobil cihazlarda (iOS/Android Taptic) daha ince ayar için eklenti gerekir.
-        /// Bu metod temel titreşimi kontrollü bir şekilde tetikler.
         /// </summary>
         public static void Light()
         {
             if (!IsEnabled) return;
 
-            #if UNITY_ANDROID || UNITY_IOS
-            Vibrate();
+            #if !UNITY_EDITOR && (UNITY_ANDROID || UNITY_IOS)
+            // Not: Unity standart Handheld.Vibrate() sadece ağır bir titreşim yapar.
+            // Bu metod gelecekte bir eklenti (ör: Taptic) ile daha hafif bir titreşime çevrilebilir.
+            Handheld.Vibrate();
             #endif
         }
 
         /// <summary>
-        /// Orta seviye bir geri bildirim gönderir (Upgrade Başarılı, Nesne Toplama).
+        /// Orta seviye bir geri bildirim gönderir (Nesne Toplama, Başarı).
         /// </summary>
         public static void Medium()
         {
             if (!IsEnabled) return;
 
-            #if UNITY_ANDROID || UNITY_IOS
-            Vibrate();
+            #if !UNITY_EDITOR && (UNITY_ANDROID || UNITY_IOS)
+            Handheld.Vibrate();
             #endif
         }
 
@@ -51,17 +51,47 @@ namespace Settings
         {
             if (!IsEnabled) return;
 
-            #if UNITY_ANDROID || UNITY_IOS
-            Vibrate();
-            #endif
-        }
-
-        private static void Vibrate()
-        {
-            // Unity'nin varsayılan titreşim fonksiyonu
             #if !UNITY_EDITOR && (UNITY_ANDROID || UNITY_IOS)
             Handheld.Vibrate();
             #endif
+        }
+
+        /// <summary>
+        /// Ölüm anında azalarak devam eden bir titreşim serisi başlatır.
+        /// </summary>
+        public static void DeathSequence(MonoBehaviour runner)
+        {
+            if (!IsEnabled) return;
+            runner.StartCoroutine(DoDeathSequence());
+        }
+
+        private static IEnumerator DoDeathSequence()
+        {
+            Heavy();
+            yield return new WaitForSecondsRealtime(0.15f);
+            Medium();
+            yield return new WaitForSecondsRealtime(0.2f);
+            Light();
+        }
+
+        private static float _nextWindHapticTime = 0f;
+
+        /// <summary>
+        /// Yüksek hızlarda "Rüzgar Hissiyatı" simüle etmek için periyodik hafif titreşim.
+        /// </summary>
+        /// <param name="speedFactor">0-1 arası hız faktörü (0: Cruise, 1: Max Boost)</param>
+        public static void WindSensation(float speedFactor)
+        {
+            if (!IsEnabled || speedFactor < 0.3f) return;
+
+            // Hız arttıkça titreşim sıklığı artar (0.3sn - 1.2sn arası)
+            float interval = Mathf.Lerp(1.2f, 0.3f, speedFactor);
+            
+            if (Time.time >= _nextWindHapticTime)
+            {
+                _nextWindHapticTime = Time.time + interval;
+                Light();
+            }
         }
     }
 }

@@ -1,11 +1,3 @@
-/**
- * @file UIButtonHandler.cs
- * @author Unity MCP Assistant
- * @date 2026-02-28
- * @last_update 2026-02-28
- * @description Dokunmatik ekranlar için tasarlanmış, butonlara basılma ve bırakılma olaylarını (IPointerHandler) yöneten yardımcı sınıftır.
- */
-
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -29,6 +21,7 @@ public class UIButtonHandler : MonoBehaviour, IPointerDownHandler, IPointerUpHan
     /// <summary> Butonun gerçekleştirebileceği eylem tipleri. </summary>
     public enum ActionType { Gas, Brake, Boost, Left, Right }
     
+    [Header("Buton Eylemi")]
     /// <summary> Bu butonun gerçekleştireceği eylem tipi. </summary>
     [Tooltip("Bu butonun gerçekleştireceği eylem tipi.")]
     public ActionType actionType;
@@ -69,6 +62,7 @@ public class UIButtonHandler : MonoBehaviour, IPointerDownHandler, IPointerUpHan
         {
             case ActionType.Gas: PlayerController.Instance.GasUp(); break;
             case ActionType.Brake: PlayerController.Instance.BrakeUp(); break;
+            case ActionType.Boost: PlayerController.Instance.BoostUp(); break;
             case ActionType.Left: 
             case ActionType.Right: 
                 PlayerController.Instance.StopHorizontal(); 

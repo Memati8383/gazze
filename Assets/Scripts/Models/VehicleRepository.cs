@@ -23,6 +23,8 @@ namespace Gazze.Models
             }
         }
 
+        [Header("Araç Listesi")]
+        [Tooltip("Oyunda kullanilan tum VehicleAttributes kayitlari.")]
         public List<VehicleAttributes> vehicles = new List<VehicleAttributes>();
 
         /// <summary>

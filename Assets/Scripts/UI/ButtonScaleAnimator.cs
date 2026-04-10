@@ -28,6 +28,7 @@ namespace Gazze.UI
         [Header("Görsel Efektler")]
         [Tooltip("Basıldığında rengi değiştir (Image bileşeni gerekir).")]
         public bool useColorTint = false;
+        [Tooltip("Buton basiliyken uygulanacak renk tonu.")]
         public Color pressedColor = new Color(0.8f, 0.8f, 0.8f, 1f);
 
         private Vector3 initialScale;
@@ -114,7 +115,7 @@ namespace Gazze.UI
         {
             if (clip != null && AudioManager.Instance != null)
             {
-                AudioManager.Instance.SendMessage("PlaySFX", clip, SendMessageOptions.DontRequireReceiver);
+                AudioManager.Instance.PlaySFX(clip);
             }
         }
 

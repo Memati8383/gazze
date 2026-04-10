@@ -1,11 +1,3 @@
-/**
- * @file MainMenuManager.cs
- * @author Unity MCP Assistant
- * @date 2026-02-28
- * @last_update 2026-02-28
- * @description Ana menü navigasyonunu, panel geçişlerini ve araç seçim mekanizmasını yöneten sınıftır.
- */
-
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -35,23 +27,37 @@ public class MainMenuManager : MonoBehaviour
     [Header("Kilit & Satın Alma Yeni Sistem")]
     /// <summary> Toplam Krediyi menüde göstermek için opsiyonel metin. </summary>
     public TextMeshProUGUI totalKrediText;
+    [Tooltip("Yetersiz bakiye gibi hata durumlarında çalınacak ses.")]
     public AudioClip errorSound;
+    [Tooltip("Araç satın alma başarılı olduğunda çalınacak ses.")]
     public AudioClip buySound;
+    [Tooltip("Yükseltme başarılı olduğunda çalınacak ses.")]
     public AudioClip upgradeSound;
 
     [Header("Yükseltme (Upgrade) Sistemi")]
+    [Tooltip("Araç yükseltme kartlarını içeren panel.")]
     public GameObject upgradePanel;
+    [Tooltip("Yükseltme seviyelerini gösteren metinler (sıra önemlidir).")]
     public TextMeshProUGUI[] upgradeLevelTexts; // Speed, Accel, Durability, Boost sırasıyla
+    [Tooltip("Yükseltme maliyetlerini gösteren metinler.")]
     public TextMeshProUGUI[] upgradeCostTexts;
+    [Tooltip("Her yükseltme tipi için tetikleyici butonlar.")]
     public Button[] upgradeButtons;
 
     [Header("Navigasyon Butonları (Otomatik Bağlanır)")]
+    [Tooltip("Araç seçim panelini açan ana buton.")]
     public Button playButton;
+    [Tooltip("Ayarlar panelini açan buton.")]
     public Button settingsButton;
+    [Tooltip("Uygulamadan çıkış butonu.")]
     public Button exitButton;
+    [Tooltip("Araç seçim panelinden ana menüye dönen buton.")]
     public Button backFromCarSelectionButton;
+    [Tooltip("Seçili araçla oyunu başlatan buton.")]
     public Button startRaceButton;
+    [Tooltip("Sonraki araca geçen buton.")]
     public Button nextCarButton;
+    [Tooltip("Önceki araca geçen buton.")]
     public Button prevCarButton;
 
     [Header("Araç Seçimi")]
@@ -64,6 +70,7 @@ public class MainMenuManager : MonoBehaviour
 
     [Header("Rotasyon Ayarları")]
     /// <summary> Sergilenen aracın saniyedeki dönme hızı (derece). </summary>
+    [Tooltip("Araç seçim ekranında aktif aracın dönme hızı.")]
     public float rotationSpeed = 30f;
     
     /// <summary> Seçilebilir araç objelerinin listesi. </summary>
@@ -71,6 +78,7 @@ public class MainMenuManager : MonoBehaviour
     public GameObject[] selectableCars;
     
     private int currentIndex = 0;
+    private float lastClickTime = 0f;
 
     private void Awake()
     {
@@ -112,6 +120,12 @@ public class MainMenuManager : MonoBehaviour
         if (selectableCars != null && selectableCars.Length > 0)
         {
             if (currentIndex >= selectableCars.Length) currentIndex = 0;
+            
+            // Tüm araçlara build'de pembe görünmemeleri için Curved World shader'ını uygula
+            foreach (var car in selectableCars)
+            {
+                if (car != null) ApplyCurvedShaderToCar(car);
+            }
         }
         
         UpdateCarDisplay();
@@ -158,13 +172,14 @@ public class MainMenuManager : MonoBehaviour
     {
         if (totalKrediText != null)
         {
-            // LocalizedText varsa panel açılışında metnimizi ezer, o yüzden kaldırıyoruz.
             var loc = totalKrediText.GetComponent<Gazze.UI.LocalizedText>();
             if (loc != null) Destroy(loc);
 
             int totalKredi = PlayerPrefs.GetInt("TotalKredi", 0);
-            string balanceLabel = Gazze.UI.LocalizationManager.Instance != null ? Gazze.UI.LocalizationManager.Instance.GetTranslation("Game_Balance") : "BAKİYE";
-            totalKrediText.text = $"{balanceLabel}: <b><color=#ffcc00>{totalKredi:N0}</color></b>";
+            
+            // "BAKİYE" başlığı butonda zaten var, biz sadece ikon yanındaki miktarı süsleyelim.
+            // Avant-Garde stil: Yüksek kontrastlı altın rengi ve kalın font.
+            totalKrediText.text = $"<color=#ffcc00><b>{totalKredi:N0}</b></color> <size=70%>KREDİ</size>";
         }
     }
 
@@ -176,9 +191,14 @@ public class MainMenuManager : MonoBehaviour
         // Ana Opsiyonlar Paneli Butonları
         if (mainOptionsPanel != null)
         {
-            if (playButton == null) playButton = mainOptionsPanel.transform.Find("Btn_OyunaBasla")?.GetComponent<Button>();
-            if (settingsButton == null) settingsButton = mainOptionsPanel.transform.Find("Btn_Ayarlar")?.GetComponent<Button>();
-            if (exitButton == null) exitButton = mainOptionsPanel.transform.Find("Btn_Cikis")?.GetComponent<Button>();
+            // Yeni hiyerarşide (MenuGroup altında) buttonları bulmak için name-based check
+            Button[] allButtons = mainOptionsPanel.GetComponentsInChildren<Button>(true);
+            foreach (var b in allButtons)
+            {
+                if (b.name == "Btn_OyunaBasla") playButton = b;
+                else if (b.name == "Btn_Ayarlar") settingsButton = b;
+                else if (b.name == "Btn_Cikis") exitButton = b;
+            }
         }
 
         // Araç Seçim Paneli Butonları
@@ -188,6 +208,16 @@ public class MainMenuManager : MonoBehaviour
             if (backFromCarSelectionButton == null) backFromCarSelectionButton = carSelectionPanel.transform.Find("Btn_Geri")?.GetComponent<Button>();
             if (prevCarButton == null) prevCarButton = carSelectionPanel.transform.Find("Btn_Prev")?.GetComponent<Button>();
             if (nextCarButton == null) nextCarButton = carSelectionPanel.transform.Find("Btn_Next")?.GetComponent<Button>();
+            
+            // Bakiyeyi (Para Yazısı) otomatik bul
+            if (totalKrediText == null)
+            {
+                var priceParent = carSelectionPanel.transform.Find("para yazısı arka plan");
+                if (priceParent != null)
+                {
+                    totalKrediText = priceParent.Find("para yazısı")?.GetComponent<TextMeshProUGUI>();
+                }
+            }
         }
 
         // Event Dinleyicilerini Ekle
@@ -292,7 +322,6 @@ public class MainMenuManager : MonoBehaviour
     /// </summary>
     public void ShowCarSelection()
     {
-        if (Settings.AudioManager.Instance != null) Settings.AudioManager.Instance.PlayClickSound();
         SwitchToPanel(carSelectionPanel);
     }
 
@@ -301,7 +330,6 @@ public class MainMenuManager : MonoBehaviour
     /// </summary>
     public void ShowMainOptions()
     {
-        if (Settings.AudioManager.Instance != null) Settings.AudioManager.Instance.PlayClickSound();
         SwitchToPanel(mainOptionsPanel);
     }
 
@@ -310,7 +338,6 @@ public class MainMenuManager : MonoBehaviour
     /// </summary>
     public void ShowSettings()
     {
-        if (Settings.AudioManager.Instance != null) Settings.AudioManager.Instance.PlayClickSound();
         SwitchToPanel(settingsPanel);
     }
 
@@ -325,7 +352,6 @@ public class MainMenuManager : MonoBehaviour
     /// </summary>
     public void OnExitClicked()
     {
-        if (Settings.AudioManager.Instance != null) Settings.AudioManager.Instance.PlayClickSound();
         // Debug.Log("Çıkış yapılıyor.");
         Application.Quit();
         #if UNITY_EDITOR
@@ -338,10 +364,16 @@ public class MainMenuManager : MonoBehaviour
     /// </summary>
     public void NextCar()
     {
+        // Debounce: Çok hızlı üst üste tıklamaları veya çift tetiklenmeyi önle
+        if (Time.unscaledTime - lastClickTime < 0.2f) return;
+        lastClickTime = Time.unscaledTime;
+
         if (Settings.AudioManager.Instance != null) Settings.AudioManager.Instance.PlayClickSound();
         if (selectableCars == null || selectableCars.Length == 0) return;
+        
         currentIndex++;
         if (currentIndex >= selectableCars.Length) currentIndex = 0;
+        
         Settings.HapticManager.Light();
         UpdateCarDisplay();
     }
@@ -351,10 +383,16 @@ public class MainMenuManager : MonoBehaviour
     /// </summary>
     public void PreviousCar()
     {
+        // Debounce: Çok hızlı üst üste tıklamaları veya çift tetiklenmeyi önle
+        if (Time.unscaledTime - lastClickTime < 0.2f) return;
+        lastClickTime = Time.unscaledTime;
+
         if (Settings.AudioManager.Instance != null) Settings.AudioManager.Instance.PlayClickSound();
         if (selectableCars == null || selectableCars.Length == 0) return;
+        
         currentIndex--;
         if (currentIndex < 0) currentIndex = selectableCars.Length - 1;
+        
         Settings.HapticManager.Light();
         UpdateCarDisplay();
     }
@@ -399,7 +437,6 @@ public class MainMenuManager : MonoBehaviour
                 case Gazze.Models.VehicleClass.Standard: return 1000;
                 case Gazze.Models.VehicleClass.Heavy: return 2000;
                 case Gazze.Models.VehicleClass.Sports: return 3000;
-                case Gazze.Models.VehicleClass.Premium: return 5000;
             }
         }
 
@@ -506,12 +543,13 @@ public class MainMenuManager : MonoBehaviour
             }
         }
 
-        // Seçimi kaydet
-        PlayerPrefs.SetInt("SelectedCarIndex", currentIndex);
-        PlayerPrefs.Save();
-
         // Yükseltme Paneli Güncelleme
         UpdateUpgradeUI(isLocked, shouldBeVisible);
+        
+        // Araç özellikleri başlığını gizle (Çünkü Yukarıdaki panel zaten yükseltmeleri/özellikleri gösteriyor)
+        // Bu daha ferah ve modern (Avant-Garde) bir görünüm sağlar.
+        var titleGo = carSelectionPanel != null ? carSelectionPanel.transform.Find("CarTitleText") : null;
+        if (titleGo != null) titleGo.gameObject.SetActive(false);
     }
 
     /// <summary>
@@ -531,8 +569,11 @@ public class MainMenuManager : MonoBehaviour
         Transform cardRow = upgradePanel != null ? upgradePanel.transform.Find("CardRow") : null;
 
         // Her tip için seviye ve maliyet bilgilerini güncelle
-        for (int i = 0; i < 4; i++) // Speed, Accel, Durability, Boost
+        int upgradeTypeCount = System.Enum.GetValues(typeof(Gazze.Models.VehicleUpgradeManager.UpgradeType)).Length;
+        for (int i = 0; i < upgradeTypeCount; i++) 
         {
+            if (i >= 5) break; // Şu anki UI tasarımı max 5 elementi destekleyebilir varsayalım
+
             Gazze.Models.VehicleUpgradeManager.UpgradeType type = (Gazze.Models.VehicleUpgradeManager.UpgradeType)i;
             int level = Gazze.Models.VehicleUpgradeManager.GetUpgradeLevel(currentIndex, type);
             int cost  = Gazze.Models.VehicleUpgradeManager.GetUpgradeCost(currentIndex, type);
@@ -547,10 +588,11 @@ public class MainMenuManager : MonoBehaviour
                 {
                     var segs = progGo.GetComponentsInChildren<UnityEngine.UI.Image>();
                     Color[] accents = {
-                        new Color32(0,   210, 255, 255),
-                        new Color32(60,  245, 110, 255),
-                        new Color32(255,  75,  80, 255),
-                        new Color32(255, 148,  20, 255)
+                        new Color32(0,   210, 255, 255), // Speed - Blue
+                        new Color32(60,  245, 110, 255), // Accel - Green
+                        new Color32(255,  75,  80, 255), // Durability - Red
+                        new Color32(255, 148,  20, 255), // Boost Duration - Orange
+                        new Color32(0,   255, 230, 255)  // Boost Refill - Cyan
                     };
                     Color fill = accents[Mathf.Clamp(i, 0, accents.Length - 1)];
                     Color goldMax = new Color32(255, 200, 50, 255);
@@ -593,6 +635,10 @@ public class MainMenuManager : MonoBehaviour
                         case Gazze.Models.VehicleUpgradeManager.UpgradeType.BoostDuration:
                             baseVal = 2.0f;
                             valueSuffix = Gazze.UI.LocalizationManager.Instance != null ? Gazze.UI.LocalizationManager.Instance.GetTranslation("Game_Unit_Sec") : "s";
+                            break;
+                        case Gazze.Models.VehicleUpgradeManager.UpgradeType.BoostRefillRate:
+                            baseVal = 0.2f; // %20/sn
+                            valueSuffix = Gazze.UI.LocalizationManager.Instance != null ? Gazze.UI.LocalizationManager.Instance.GetTranslation("Game_Unit_PerSec") : "/s";
                             break;
                     }
                 }
@@ -688,7 +734,8 @@ public class MainMenuManager : MonoBehaviour
             new Color32(0,   210, 255, 255),
             new Color32(60,  245, 110, 255),
             new Color32(255,  75,  80, 255),
-            new Color32(255, 148,  20, 255)
+            new Color32(255, 148,  20, 255),
+            new Color32(0,   255, 230, 255)
         };
         Color fillColor = accents[Mathf.Clamp(cardIndex, 0, accents.Length - 1)];
         Color goldMax = new Color32(255, 200, 50, 255);
@@ -810,7 +857,9 @@ public class MainMenuManager : MonoBehaviour
             Color[] colors = new Color[r.materials.Length];
             for (int m = 0; m < r.materials.Length; m++)
             {
-                colors[m] = r.materials[m].color;
+                Material mat = r.materials[m];
+                colors[m] = mat.HasProperty("_BaseColor") ? mat.GetColor("_BaseColor") : 
+                           (mat.HasProperty("_Color") ? mat.color : Color.white);
             }
             originalColors[r] = colors;
         }
@@ -831,7 +880,10 @@ public class MainMenuManager : MonoBehaviour
                 if (r == null || !originalColors.ContainsKey(r)) continue;
                 for (int m = 0; m < r.materials.Length; m++)
                 {
-                    r.materials[m].color = Color.Lerp(originalColors[r][m], flashColor, 1f - t);
+                    Material mat = r.materials[m];
+                    Color lerped = Color.Lerp(originalColors[r][m], flashColor, 1f - t);
+                    if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", lerped);
+                    else if (mat.HasProperty("_Color")) mat.color = lerped;
                 }
             }
 
@@ -865,8 +917,10 @@ public class MainMenuManager : MonoBehaviour
                 if (r == null || !originalColors.ContainsKey(r)) continue;
                 for (int m = 0; m < r.materials.Length; m++)
                 {
+                    Material mat = r.materials[m];
                     Color mid = Color.Lerp(upgradeGlow, originalColors[r][m], easedT);
-                    r.materials[m].color = mid;
+                    if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", mid);
+                    else if (mat.HasProperty("_Color")) mat.color = mid;
                 }
             }
 
@@ -980,6 +1034,10 @@ public class MainMenuManager : MonoBehaviour
     /// </summary>
     public void StartGame()
     {
+        // Debounce: Çok hızlı üst üste tıklamaları önle (0.5 saniye)
+        if (Time.unscaledTime - lastClickTime < 0.5f) return;
+        lastClickTime = Time.unscaledTime;
+
         if (Settings.AudioManager.Instance != null) Settings.AudioManager.Instance.PlayClickSound();
 
         int selectedIndex = PlayerPrefs.GetInt("SelectedCarIndex", 0);
@@ -1007,26 +1065,65 @@ public class MainMenuManager : MonoBehaviour
                     Settings.AudioManager.Instance.PlaySFX(buySound);
                 }
 
-                // Debug.Log($"Araç Satın Alındı! Kalan Kredi: {totalKredi - price}");
+                // UI'ı güncelle ve metodu bitir (Hemen oyuna girmesin)
                 UpdateCarDisplay();
-                return; // Satın alım sonrası hemen maça girmesin, butona tekrar tıklamayı beklesin (görsel tatmin).
+                return; 
             }
             else
             {
                 // Satın Alma Başarısız (Yetersiz Kredi)
                 StartCoroutine(FlashPriceTextError());
-                return; // Oyunu başlatma
+                return;
             }
-        }
-
-        // Kilitli değilse oyunu başlat
-        if (LoadingManager.Instance != null)
-        {
-            LoadingManager.Instance.LoadScene("SampleScene");
         }
         else
         {
-            SceneManager.LoadScene("SampleScene");
+            // Araç kilitli değilse (zaten alınmışsa veya ücretsizse) oyunu başlat
+            if (LoadingManager.Instance != null)
+            {
+                LoadingManager.Instance.LoadScene("SampleScene");
+            }
+            else
+            {
+                UnityEngine.SceneManagement.SceneManager.LoadScene("SampleScene");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Aracın tüm parçalarına Curved World shader'ını uygular.
+    /// Bu, build'deki 'pink shader' hatasını çözer. Menüde eğrilik görünmese de (curvature=0 ayarlanabilir) 
+    /// shader uyumluluğu için gereklidir.
+    /// </summary>
+    private void ApplyCurvedShaderToCar(GameObject car)
+    {
+        Shader vehicleShader = Shader.Find("Custom/VehicleShader_URP");
+        if (vehicleShader == null) vehicleShader = Shader.Find("Custom/CurvedWorld_URP"); // Fallback
+        if (vehicleShader == null) return;
+
+        foreach (Renderer r in car.GetComponentsInChildren<Renderer>())
+        {
+            foreach (Material mat in r.materials)
+            {
+                if (mat.shader != vehicleShader)
+                {
+                    // Mevcut doku ve renkleri koruyarak shader'ı değiştir
+                    Texture mainTex = mat.mainTexture;
+                    Color mainColor = mat.HasProperty("_Color") ? mat.color : (mat.HasProperty("_BaseColor") ? mat.GetColor("_BaseColor") : Color.white);
+                    mat.shader = vehicleShader;
+                    if (mainTex != null) mat.SetTexture("_BaseMap", mainTex);
+                    mat.SetColor("_BaseColor", mainColor);
+
+                    // Showroom görünümü için kir ve aşınmayı sıfırla (veya çok az tut)
+                    if (mat.HasProperty("_DirtAmount")) mat.SetFloat("_DirtAmount", 0.05f); // Çok hafif toz
+                    if (mat.HasProperty("_WearStrength")) mat.SetFloat("_WearStrength", 0f); // Sıfır aşınma
+
+                    // Yol ayarlarıyla (Road) senkronize et (Editor default değerleri)
+                    mat.SetFloat("_Curvature", 0.002f);
+                    mat.SetFloat("_CurvatureH", -0.0015f);
+                    mat.SetFloat("_HorizonOffset", 10.0f);
+                }
+            }
         }
     }
 }

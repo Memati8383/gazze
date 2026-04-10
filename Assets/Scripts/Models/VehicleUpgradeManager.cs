@@ -12,7 +12,8 @@ namespace Gazze.Models
             Speed,
             Acceleration,
             Durability,
-            BoostDuration
+            BoostDuration,
+            BoostRefillRate
         }
 
         public const int MaxUpgradeLevel = 5;

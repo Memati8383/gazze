@@ -10,7 +10,12 @@ namespace Gazze.UI
     /// </summary>
     public class ScreenshotShareManager : MonoBehaviour
     {
+        /// <summary>Global erisim icin singleton ornek.</summary>
         public static ScreenshotShareManager Instance { get; private set; }
+
+        [Header("Paylasim Ayarlari")]
+        [Tooltip("Paylasim metninde kullanilan varsayilan oyun basligi.")]
+        [SerializeField] private string defaultGameTitle = "Gazze";
 
         void Awake()
         {
@@ -24,6 +29,7 @@ namespace Gazze.UI
         /// </summary>
         public void CaptureAndShare(GameObject sharePanel = null, string gameTitle = "Gazze")
         {
+            if (string.IsNullOrWhiteSpace(gameTitle)) gameTitle = defaultGameTitle;
             StartCoroutine(CaptureAndShareRoutine(sharePanel, gameTitle));
         }
 
@@ -166,8 +172,12 @@ namespace Gazze.UI
                     }
 
                     intent.Call<AndroidJavaObject>("putExtra", "android.intent.extra.STREAM", uri);
-                    intent.Call<AndroidJavaObject>("putExtra", "android.intent.extra.TEXT", 
-                        $"{gameTitle} oyunundaki skorumu gör!");
+                    
+                    string shareDesc = LocalizationManager.Instance != null 
+                        ? LocalizationManager.GetFormatted("Game_ShareText", gameTitle)
+                        : $"{gameTitle} oyunundaki skorumu gör!";
+                    intent.Call<AndroidJavaObject>("putExtra", "android.intent.extra.TEXT", shareDesc);
+                    
                     intent.Call<AndroidJavaObject>("addFlags", 1); // FLAG_GRANT_READ_URI_PERMISSION
 
                     // Chooser oluştur
@@ -200,9 +210,11 @@ namespace Gazze.UI
         {
             if (PlayerController.Instance != null)
             {
-                string text = $"Gazze oyununda skorumu gör!";
-                GUIUtility.systemCopyBuffer = text;
-                Debug.Log($"<color=cyan>Gazze:</color> Skor panoya kopyalandı: {text}");
+                string shareDesc = LocalizationManager.Instance != null 
+                    ? LocalizationManager.GetFormatted("Game_ShareText", "Gazze")
+                    : "Gazze oyununda skorumu gör!";
+                GUIUtility.systemCopyBuffer = shareDesc;
+                Debug.Log($"<color=cyan>Gazze:</color> Skor panoya kopyalandı: {shareDesc}");
             }
         }
 

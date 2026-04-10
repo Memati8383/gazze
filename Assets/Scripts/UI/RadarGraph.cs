@@ -12,10 +12,15 @@ namespace Gazze.UI
         public float radius = 100f;
 
         [Header("Özellik Değerleri (0-1 aralığında)")]
+        [Tooltip("Hiz degerinin normalize edilmis karsiligi.")]
         public float speed = 0.5f;
+        [Tooltip("Ivme degerinin normalize edilmis karsiligi.")]
         public float acceleration = 0.5f;
+        [Tooltip("Yol tutus/manevra degerinin normalize edilmis karsiligi.")]
         public float handling = 0.5f;
+        [Tooltip("Dayaniklilik degerinin normalize edilmis karsiligi.")]
         public float durability = 0.5f;
+        [Tooltip("Maliyet degerinin normalize edilmis karsiligi.")]
         public float cost = 0.5f;
 
         protected override void OnPopulateMesh(VertexHelper vh)
